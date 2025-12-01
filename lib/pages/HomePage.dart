@@ -25,7 +25,7 @@ class _HomepageState extends State<Homepage> {
   }
 
   void _onTabChanged(int index) {
-    setState(() {
+    setState(() { 
       selectedTabIndex = index;
     });
   }
