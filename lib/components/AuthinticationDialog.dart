@@ -87,7 +87,6 @@ class _AuthinticationDialogState extends State<AuthinticationDialog> {
               ),
               const SizedBox(height: 32),
 
-              // Username
               const Text(
                 'Username',
                 style: TextStyle(
@@ -122,7 +121,6 @@ class _AuthinticationDialogState extends State<AuthinticationDialog> {
               ),
               const SizedBox(height: 24),
 
-              // Password
               const Text(
                 'Password',
                 style: TextStyle(

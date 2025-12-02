@@ -111,7 +111,7 @@ class _SideBarState extends State<SideBar> {
             ],
           ),
           const Spacer(),
-          _buildSettingsLabel(),
+          _buildLogoutLabel(),
           _buildDivider(),
           _buildMenuItem(
             image: 'assets/icon/logout.png',
@@ -119,11 +119,7 @@ class _SideBarState extends State<SideBar> {
             index: 6,
             isLogout: true,
           ),
-          _buildMenuItem(
-            image: 'assets/icon/settings.png',
-            title: 'General Settings',
-            index: 7,
-          ),
+
           const SizedBox(height: 100),
         ],
       ),
@@ -160,7 +156,7 @@ class _SideBarState extends State<SideBar> {
     );
   }
 
-  Widget _buildSettingsLabel() {
+  Widget _buildLogoutLabel() {
     if (!showText) return const SizedBox.shrink();
 
     return Padding(
@@ -168,7 +164,7 @@ class _SideBarState extends State<SideBar> {
       child: Align(
         alignment: Alignment.centerLeft,
         child: Text(
-          'Settings',
+          'Logout',
           style: TextStyle(
             fontSize: 12,
             color: Colors.grey[600],

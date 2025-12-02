@@ -98,59 +98,67 @@ final List<Department> departments = [
     name: 'Race Engineering',
     headName: 'Adrian Newey',
     totalStaffMembers: 45,
+    emloyees: employees,
   ),
   Department(
     id: '2',
     name: 'Aerodynamics',
     headName: 'Guenther Steiner',
     totalStaffMembers: 38,
+    emloyees: employees,
   ),
   Department(
     id: '3',
     name: 'Strategy',
     headName: 'Hannah Schmitz',
     totalStaffMembers: 22,
+    emloyees: employees,
   ),
   Department(
     id: '4',
     name: 'Pit Crew Operations',
     headName: 'Gianpiero Lambiase',
     totalStaffMembers: 28,
+    emloyees: employees,
   ),
   Department(
     id: '5',
     name: 'Vehicle Dynamics',
     headName: 'Rob Marshall',
     totalStaffMembers: 35,
+    emloyees: employees,
   ),
   Department(
     id: '6',
     name: 'Engine Development',
     headName: 'Andy Cowell',
     totalStaffMembers: 52,
+    emloyees: employees,
   ),
   Department(
     id: '6',
     name: 'Engine Development',
     headName: 'Andy Cowell',
     totalStaffMembers: 52,
+    emloyees: employees,
   ),
   Department(
     id: '6',
     name: 'Engine Development',
     headName: 'Andy Cowell',
     totalStaffMembers: 52,
+    emloyees: employees,
   ),
   Department(
     id: '6',
     name: 'Engine Development',
     headName: 'Andy Cowell',
     totalStaffMembers: 52,
+    emloyees: employees,
   ),
 ];
 
-  List<String> domains = ['Surgery Domain'];
-
+List<String> domains = ['Surgery Domain'];
 
 final List<Body> bodies = [
   Body(
