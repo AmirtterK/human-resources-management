@@ -16,7 +16,36 @@ class EmployeesTab extends StatefulWidget {
 
 class _EmployeesTabState extends State<EmployeesTab> {
   final TextEditingController _searchController = TextEditingController();
+  List<Employee> _filteredEmployees = [];
   Employee? selectedEmployee;
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredEmployees = employees;
+    _searchController.addListener(_filterEmployees);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _filterEmployees() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      if (query.isEmpty) {
+        _filteredEmployees = employees;
+      } else {
+        _filteredEmployees = employees.where((employee) {
+          final nameMatch = employee.fullName.toLowerCase().contains(query);
+          final idMatch = employee.id.toLowerCase().contains(query);
+          return nameMatch || idMatch;
+        }).toList();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -173,7 +202,7 @@ class _EmployeesTabState extends State<EmployeesTab> {
         ),
         child: EmployeesTable(
           title: 'EmployeesTab',
-          employees: employees,
+          employees: _filteredEmployees,
           onEmployeePressed: _showEmployeeActions,
         ),
       ),

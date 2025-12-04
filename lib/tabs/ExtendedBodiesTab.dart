@@ -23,7 +23,37 @@ class ExtendedBodiesTab extends StatefulWidget {
 
 class _ExtendedBodiesTabState extends State<ExtendedBodiesTab> {
   final TextEditingController _searchController = TextEditingController();
+  List<Employee> _filteredEmployees = [];
   Employee? selectedEmployee;
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredEmployees = widget.body?.employees ?? [];
+    _searchController.addListener(_filterEmployees);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _filterEmployees() {
+    final query = _searchController.text.toLowerCase();
+    final sourceList = widget.body?.employees ?? [];
+    setState(() {
+      if (query.isEmpty) {
+        _filteredEmployees = sourceList;
+      } else {
+        _filteredEmployees = sourceList.where((employee) {
+          final nameMatch = employee.fullName.toLowerCase().contains(query);
+          final idMatch = employee.id.toLowerCase().contains(query);
+          return nameMatch || idMatch;
+        }).toList();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -194,7 +224,7 @@ class _ExtendedBodiesTabState extends State<ExtendedBodiesTab> {
         ),
         child: EmployeesTable(
           title: 'ExtendedBodiesTab',
-          employees: employees,
+          employees: _filteredEmployees,
           onEmployeePressed: _showEmployeeActions,
         ),
       ),

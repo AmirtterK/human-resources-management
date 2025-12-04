@@ -7,6 +7,7 @@ class SideBar extends StatefulWidget {
   final VoidCallback onToggle;
   final int selectedIndex;
   final Function(int) onTabChanged;
+  final VoidCallback onLogout;
 
   const SideBar({
     super.key,
@@ -14,6 +15,7 @@ class SideBar extends StatefulWidget {
     required this.onToggle,
     required this.selectedIndex,
     required this.onTabChanged,
+    required this.onLogout,
   });
 
   @override
@@ -116,8 +118,9 @@ class _SideBarState extends State<SideBar> {
           _buildMenuItem(
             image: 'assets/icon/logout.png',
             title: 'Logout',
-            index: 6,
+            index: -1, // Special index for logout
             isLogout: true,
+            onTap: widget.onLogout, // Call logout callback
           ),
 
           const SizedBox(height: 100),
@@ -199,12 +202,13 @@ class _SideBarState extends State<SideBar> {
     required String title,
     required int index,
     bool isLogout = false,
+    VoidCallback? onTap,
   }) {
     final isSelected = widget.selectedIndex == index;
     return Tooltip(
       message: !showText ? title : '',
       child: InkWell(
-        onTap: () {
+        onTap: onTap ?? () {
           widget.onTabChanged(index);
         },
         borderRadius: BorderRadius.circular(8),

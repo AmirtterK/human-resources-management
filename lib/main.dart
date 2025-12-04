@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hr_management/pages/HomePage.dart';
 import 'pages/Loginpage.dart';
+import 'package:hr_management/components/ForgotPasswordDialog.dart';
+import 'package:hr_management/components/PasswordSuccessDialog.dart';
+import 'package:hr_management/components/PasswordFailedDialog.dart';
 
 void main() {
   runApp(const MyApp());
@@ -54,10 +57,52 @@ class MyApp extends StatelessWidget {
   }
 
   static final GoRouter _router = GoRouter(
-    initialLocation: '/home',
+    initialLocation: '/login',
     routes: [
       GoRoute(path: '/home', builder: (context, state) => const Homepage()),
       GoRoute(path: '/login', builder: (context, state) => const Loginpage()),
+      GoRoute(
+        path: '/reset-password',
+        builder: (context, state) => const Scaffold(
+          backgroundColor: Color(0xffF1F7F6),
+          body: SingleChildScrollView(
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 40),
+                child: ResetPasswordDialog(),
+              ),
+            ),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/reset-success',
+        builder: (context, state) => const Scaffold(
+          backgroundColor: Color(0xffF1F7F6),
+          body: SingleChildScrollView(
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 40),
+                child: PasswordSuccessDialog(),
+              ),
+            ),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/reset-failed',
+        builder: (context, state) => const Scaffold(
+          backgroundColor: Color(0xffF1F7F6),
+          body: SingleChildScrollView(
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 40),
+                child: PasswordFailedDialog(),
+              ),
+            ),
+          ),
+        ),
+      ),
     ],
   );
 }

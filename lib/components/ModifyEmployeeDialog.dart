@@ -61,11 +61,12 @@ class _ModifyEmployeeDialogState extends State<ModifyEmployeeDialog> {
         child: Container(
           width: 400,
           padding: const EdgeInsets.all(32),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: SingleChildScrollView(
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Text(
                   'Modify Employee',
@@ -451,6 +452,8 @@ class _ModifyEmployeeDialogState extends State<ModifyEmployeeDialog> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }
+

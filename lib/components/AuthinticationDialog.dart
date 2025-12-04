@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:hr_management/services/auth_service.dart';
+import 'package:hr_management/data/data.dart' as app_data;
 
 class AuthinticationDialog extends StatefulWidget {
   const AuthinticationDialog({super.key});
@@ -11,6 +14,7 @@ class _AuthinticationDialogState extends State<AuthinticationDialog> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -19,15 +23,59 @@ class _AuthinticationDialogState extends State<AuthinticationDialog> {
     super.dispose();
   }
 
-  void _handleSignIn() {
+  void _handleSignIn() async {
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Signing in...')));
+      setState(() {
+        _isLoading = true;
+      });
+
+      // Get entered credentials
+      final username = _usernameController.text;
+      final password = _passwordController.text;
+
+      // Authenticate user
+      final userRole = AuthService.authenticate(username, password);
+
+      if (userRole != null) {
+        // Authentication successful
+        app_data.user = userRole; // Update global user variable
+
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Welcome, ${AuthService.getDisplayName(username)}!'),
+              backgroundColor: const Color(0xff0A866F),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+
+          // Navigate to home page
+          context.go('/home');
+        }
+      } else {
+        // Authentication failed
+        setState(() {
+          _isLoading = false;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Invalid username or password'),
+              backgroundColor: Color(0xffEF5350),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      }
     }
   }
 
-  void _handleForgotPassword() {}
+  void _handleForgotPassword() {
+    // Navigate to forgot password page
+    context.go('/reset-password');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,9 +90,10 @@ class _AuthinticationDialogState extends State<AuthinticationDialog> {
       child: Container(
         width: 380,
         padding: const EdgeInsets.all(40),
-        child: Form(
-          key: _formKey,
-          child: Column(
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -158,10 +207,11 @@ class _AuthinticationDialogState extends State<AuthinticationDialog> {
 
               Center(
                 child: ElevatedButton(
-                  onPressed: _handleSignIn,
+                  onPressed: _isLoading ? null : _handleSignIn,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xff0A866F),
                     foregroundColor: Colors.white,
+                    disabledBackgroundColor: const Color(0xff0A866F).withOpacity(0.6),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 50,
                       vertical: 14,
@@ -171,10 +221,19 @@ class _AuthinticationDialogState extends State<AuthinticationDialog> {
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    'Sign-in',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text(
+                          'Sign-in',
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                        ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -196,6 +255,7 @@ class _AuthinticationDialogState extends State<AuthinticationDialog> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }

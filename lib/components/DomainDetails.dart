@@ -235,10 +235,40 @@ class _DomainDetailsState extends State<DomainDetails> {
                       Row(
                         children: [
                           Expanded(
+                            flex: 2,
                             child: TextField(
                               controller: _gradeController,
                               decoration: InputDecoration(
                                 hintText: 'Enter Grade',
+                                hintStyle: const TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 13,fontWeight: FontWeight.w500,
+                                ),
+                                filled: true,
+                                fillColor: const Color.fromARGB(
+                                  255,
+                                  255,
+                                  255,
+                                  255,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 14,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            flex: 1,
+                            child: TextField(
+                              controller: _codeController,
+                              decoration: InputDecoration(
+                                hintText: 'Grade Code',
                                 hintStyle: const TextStyle(
                                   color: Colors.grey,
                                   fontSize: 13,fontWeight: FontWeight.w500,

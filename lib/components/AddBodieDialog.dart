@@ -48,11 +48,12 @@ class _AddBodyDialogState extends State<AddBodyDialog> {
         child: Container(
           width: 380,
           padding: const EdgeInsets.all(32),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: SingleChildScrollView(
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Text(
                   'Create a New Body',
@@ -216,7 +217,8 @@ class _AddBodyDialogState extends State<AddBodyDialog> {
                     ),
                   ),
                 ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -224,3 +226,4 @@ class _AddBodyDialogState extends State<AddBodyDialog> {
     );
   }
 }
+

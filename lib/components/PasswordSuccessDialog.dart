@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class PasswordSuccessDialog extends StatelessWidget {
-  final VoidCallback onReturnToLogin;
-
-  const PasswordSuccessDialog({
-    super.key,
-    required this.onReturnToLogin,
-  });
+  const PasswordSuccessDialog({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +43,7 @@ class PasswordSuccessDialog extends StatelessWidget {
             ),
             const SizedBox(height: 30),
             TextButton(
-              onPressed: onReturnToLogin,
+              onPressed: () => context.go('/login'),
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 30,

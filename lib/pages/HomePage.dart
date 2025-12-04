@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hr_management/components/SideBar.dart';
 import 'package:hr_management/tabs/BodiesTab.dart';
 import 'package:hr_management/tabs/DomainsTab.dart';
@@ -6,6 +7,8 @@ import 'package:hr_management/tabs/EmployeesTab.dart';
 import 'package:hr_management/tabs/DepartmentsTab.dart';
 import 'package:hr_management/tabs/RequestsTab.dart';
 import 'package:hr_management/tabs/RetirementTab.dart';
+import 'package:hr_management/data/data.dart';
+import 'package:hr_management/classes/types.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
@@ -18,6 +21,17 @@ class _HomepageState extends State<Homepage> {
   bool isExpanded = true;
   int selectedTabIndex = 0;
 
+  String _getUserRoleTitle() {
+    switch (user) {
+      case User.pm:
+        return 'Personnel Manager';
+      case User.agent:
+        return 'Agent';
+      case User.archiver:
+        return 'Archive Manager';
+    }
+  }
+
   void _toggleSidebar() {
     setState(() {
       isExpanded = !isExpanded;
@@ -28,6 +42,11 @@ class _HomepageState extends State<Homepage> {
     setState(() { 
       selectedTabIndex = index;
     });
+  }
+
+  void _handleLogout() {
+    // Navigate to login page
+    context.go('/login');
   }
 
   Widget _getCurrentTab() {
@@ -47,8 +66,6 @@ class _HomepageState extends State<Homepage> {
 
       case 6:
         return const Center(child: Text('Settings'));
-      case 7:
-        return const Center(child: Text('logout'));
       default:
         return Placeholder();
     }
@@ -82,6 +99,19 @@ class _HomepageState extends State<Homepage> {
         ),
         actionsPadding: const EdgeInsets.only(bottom: 20, right: 20),
         actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Center(
+              child: Text(
+                _getUserRoleTitle(),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xff017B64),
+                ),
+              ),
+            ),
+          ),
           Stack(
             children: [
               IconButton(
@@ -115,6 +145,7 @@ class _HomepageState extends State<Homepage> {
             onToggle: _toggleSidebar,
             selectedIndex: selectedTabIndex,
             onTabChanged: _onTabChanged,
+            onLogout: _handleLogout,
           ),
           Expanded(child: _getCurrentTab()),
         ],

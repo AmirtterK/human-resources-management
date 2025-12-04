@@ -1,6 +1,7 @@
 import 'package:hr_management/classes/types.dart';
 
 class Employee {
+  final String id;
   final String fullName;
   final String rank;
   final String category;
@@ -11,6 +12,7 @@ class Employee {
   final String? gradeEn;
   final String? gradeAr;
   Employee({
+    required this.id,
     required this.fullName,
     required this.rank,
     required this.category,

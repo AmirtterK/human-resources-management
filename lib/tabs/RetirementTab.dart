@@ -15,7 +15,50 @@ class RetirementTab extends StatefulWidget {
 
 class _RetirementTabState extends State<RetirementTab> {
   final TextEditingController _searchController = TextEditingController();
+  List<Employee> _filteredEmployees = [];
   Employee? selectedEmployee;
+
+  @override
+  void initState() {
+    super.initState();
+    _updateFilteredList();
+    _searchController.addListener(_filterEmployees);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Employee> get _sourceList {
+    if (user == User.archiver) {
+      return retiredEmployees;
+    } else {
+      return employees.where((emp) => emp.status == Status.toRetire).toList();
+    }
+  }
+
+  void _updateFilteredList() {
+    setState(() {
+      _filteredEmployees = _sourceList;
+    });
+  }
+
+  void _filterEmployees() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      if (query.isEmpty) {
+        _filteredEmployees = _sourceList;
+      } else {
+        _filteredEmployees = _sourceList.where((employee) {
+          final nameMatch = employee.fullName.toLowerCase().contains(query);
+          final idMatch = employee.id.toLowerCase().contains(query);
+          return nameMatch || idMatch;
+        }).toList();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -143,11 +186,7 @@ class _RetirementTabState extends State<RetirementTab> {
         ),
         child: EmployeesTable(
           title: 'RetirementTab',
-          employees: user == User.archiver
-              ? retiredEmployees
-              : employees
-                    .where((emp) => emp.status == Status.toRetire)
-                    .toList(),
+          employees: _filteredEmployees,
           onEmployeePressed: _showEmployeeActions,
         ),
       ),

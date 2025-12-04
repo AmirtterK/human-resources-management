@@ -54,11 +54,12 @@ class _ModifyRetireeDialogState extends State<ModifyRetireeDialog> {
         child: Container(
           width: 400,
           padding: const EdgeInsets.all(32),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: SingleChildScrollView(
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Text(
                   'Modify Retiree',
@@ -333,6 +334,8 @@ class _ModifyRetireeDialogState extends State<ModifyRetireeDialog> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }
+
