@@ -1,35 +1,36 @@
 import 'package:flutter/material.dart';
 
-class AddBodyDialog extends StatefulWidget {
-  const AddBodyDialog({super.key});
+class AddEmployeeToBodieDialog extends StatefulWidget {
+  const AddEmployeeToBodieDialog({super.key});
 
   @override
-  State<AddBodyDialog> createState() => _AddBodyDialogState();
+  State<AddEmployeeToBodieDialog> createState() => _AddEmployeeToBodieDialogState();
 }
 
-class _AddBodyDialogState extends State<AddBodyDialog> {
+class _AddEmployeeToBodieDialogState extends State<AddEmployeeToBodieDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _bodyNameController = TextEditingController();
-  final _bodyNameArController = TextEditingController();
-  final _bodyCodeController = TextEditingController();
+  final _employeeIdController = TextEditingController();
+  String? _selectedGrade;
+
+  final List<String> _grades = [
+    'Grade A',
+    'Grade B',
+    'Grade C',
+    'Grade D',
+  ];
 
   @override
   void dispose() {
-    _bodyNameController.dispose();
-    _bodyNameArController.dispose();
-    _bodyCodeController.dispose();
+    _employeeIdController.dispose();
     super.dispose();
   }
 
-  void _handleCreate() {
+  void _handleValidate() {
     if (_formKey.currentState!.validate()) {
-      final bodyData = {
-        'id': _bodyCodeController.text,
-        'name': _bodyNameController.text,
-        'nameAr': _bodyNameArController.text,
-        'totalMembers': 0,
-      };
-      Navigator.of(context).pop(bodyData);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Employee added successfully')),
+      );
+      Navigator.of(context).pop();
     }
   }
 
@@ -64,142 +65,129 @@ class _AddBodyDialogState extends State<AddBodyDialog> {
                   ),
                 ),
                 const Text(
-                  'إضافة هيئة جديدة',
+                  'إضافة عامل جديد',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Alfont',
+                    fontSize: 18,
+                    fontWeight: FontWeight.w400,
                     color: Color(0xff0A866F),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Body Name',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                TextFormField(
-                  controller: _bodyNameController,
-                  style: const TextStyle(fontSize: 13),
-                  decoration: InputDecoration(
-                    hintText: "Enter body name",
-                    hintStyle: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 13,
-                    ),
-                    filled: true,
-                    fillColor: Colors.grey[100],
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(4),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter body name';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'اسم الهيئة',
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    fontSize: 14,
                     fontFamily: 'Alfont',
-                    color: Colors.black87,
                   ),
                 ),
-                const SizedBox(height: 4),
-                TextFormField(
-                  controller: _bodyNameArController,
-                  textAlign: TextAlign.right,
-                  style: const TextStyle(fontSize: 13),
-                  decoration: InputDecoration(
-                    hintText: "ادخل اسم الهيئة",
-                    hintStyle: const TextStyle(
-                      color: Colors.grey,
-                      fontFamily: 'Alfont',
-                      fontSize: 13,
-                    ),
-                    filled: true,
-                    fillColor: Colors.grey[100],
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(4),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter Arabic name';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
+                
                 const Text(
-                  'Body Code',
+                  "Employee's ID",
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
                     color: Colors.black87,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 TextFormField(
-                  controller: _bodyCodeController,
+                  controller: _employeeIdController,
                   style: const TextStyle(fontSize: 13),
                   decoration: InputDecoration(
-                    hintText: "Enter body identifier",
+                    hintText: "Enter Employee's ID",
                     hintStyle: const TextStyle(
                       color: Colors.grey,
                       fontSize: 13,
                     ),
-                    filled: true,
-                    fillColor: Colors.grey[100],
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 12,
-                      vertical: 10,
+                      vertical: 12,
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(4),
-                      borderSide: BorderSide.none,
                     ),
+                    isDense: true,
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter body code';
+                      return 'Please enter employee ID';
                     }
                     return null;
                   },
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 16),
+
                 const Text(
-                  'NOTE: MAKE SURE THE CODE BE SELF-DESCRIBING',
-                  style: TextStyle(fontSize: 10, color: Colors.grey),
+                  'Grade code',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: _selectedGrade,
+                  decoration: InputDecoration(
+                    hintText: 'CP310',
+                    hintStyle: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 13,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    isDense: true,
+                  ),
+                  items: _grades.map((String grade) {
+                    return DropdownMenuItem<String>(
+                      value: grade,
+                      child: Text(
+                        grade,
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      _selectedGrade = newValue;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please select a grade';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                const Text(
+                  'Grade : chief principal assistant Doctor',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black87,
+                  ),
+                ),
+                const Text(
+                  'الطبيب الأستاذ المساعد الرئيسي',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.black87,
+                    fontFamily: 'Alfont',
+                  ),
                 ),
                 const SizedBox(height: 24),
+
                 Center(
                   child: ElevatedButton(
-                    onPressed: _handleCreate,
+                    onPressed: _handleValidate,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF09866F),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 48,
+                        horizontal: 40,
                         vertical: 12,
                       ),
                       shape: RoundedRectangleBorder(
@@ -208,7 +196,7 @@ class _AddBodyDialogState extends State<AddBodyDialog> {
                       elevation: 0,
                     ),
                     child: const Text(
-                      'Create',
+                      'Validate',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,

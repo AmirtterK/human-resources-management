@@ -14,7 +14,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: 'HR MANAGEMENT',
-      
+
       debugShowCheckedModeBanner: false,
 
       routerConfig: _router,
@@ -41,21 +41,23 @@ class MyApp extends StatelessWidget {
             vertical: 18,
           ),
         ),
+        fontFamily: 'Trap',
+        fontFamilyFallback: const ['Alfont'],
+        textTheme: const TextTheme(
+          displayLarge: TextStyle(fontWeight: FontWeight.w700),
+          displayMedium: TextStyle(fontWeight: FontWeight.w600),
+          bodyLarge: TextStyle(fontWeight: FontWeight.w400),
+          bodyMedium: TextStyle(fontWeight: FontWeight.w400),
+        ),
       ),
     );
   }
-  
+
   static final GoRouter _router = GoRouter(
     initialLocation: '/home',
     routes: [
-      GoRoute(
-        path: '/home',
-        builder: (context, state) => const Homepage(),
-      ),
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const Loginpage(),
-      ),
+      GoRoute(path: '/home', builder: (context, state) => const Homepage()),
+      GoRoute(path: '/login', builder: (context, state) => const Loginpage()),
     ],
   );
 }

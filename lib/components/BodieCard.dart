@@ -62,6 +62,7 @@ class BodyCard extends StatelessWidget {
             style: const TextStyle(
               fontSize: 14,
               color: Colors.black87,
+              fontFamily: 'Alfont'
             ),
           ),
           const SizedBox(width: 16),

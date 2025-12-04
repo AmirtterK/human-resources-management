@@ -3,6 +3,7 @@ import 'package:hr_management/classes/Body.dart';
 import 'package:hr_management/classes/Employee.dart';
 import 'package:hr_management/classes/types.dart';
 import 'package:hr_management/components/AddEmployeeDialog.dart';
+import 'package:hr_management/components/AddEmployeeToBodieDialog.dart';
 import 'package:hr_management/components/EmployeesTable.dart';
 import 'package:hr_management/components/ModifyEmployeeDialog.dart';
 import 'package:hr_management/data/data.dart';
@@ -89,11 +90,20 @@ class _ExtendedBodiesTabState extends State<ExtendedBodiesTab> {
     return Row(
       children: [
         Text(
-          "${widget.body!.nameEn} / ${widget.body!.nameAr} ",
+          "${widget.body!.nameEn} / ",
           style: TextStyle(
             letterSpacing: 1,
             fontSize: 24,
             fontWeight: FontWeight.bold,
+            color: Colors.teal,
+          ),
+        ),
+        Text(
+          " ${widget.body!.nameAr}",
+          style: TextStyle(
+            letterSpacing: 1,
+            fontSize: 24,
+            fontFamily: 'Alfont',
             color: Colors.teal,
           ),
         ),
@@ -114,25 +124,12 @@ class _ExtendedBodiesTabState extends State<ExtendedBodiesTab> {
           ),
         ),
         const SizedBox(width: 20),
-        if (user == User.agent)
-          OutlinedButton(
-            onPressed: () {},
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.teal,
-              side: const BorderSide(color: Colors.teal),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
-              ),
-            ),
-            child: const Text('Extract List'),
-          )
-        else
+        
           OutlinedButton(
             onPressed: () {
               showDialog(
                 context: context,
-                builder: (context) => AddEmployeeDialog(),
+                builder: (context) => AddEmployeeToBodieDialog(),
               );
             },
             style: OutlinedButton.styleFrom(
@@ -150,8 +147,7 @@ class _ExtendedBodiesTabState extends State<ExtendedBodiesTab> {
                   'Add Employee',
                   style: TextStyle(fontWeight: FontWeight.w500),
                 ),
-                SizedBox(width: 4),
-                Icon(Icons.add),
+               
               ],
             ),
           ),

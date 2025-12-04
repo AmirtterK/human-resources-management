@@ -42,6 +42,8 @@ class EmployeesTable extends StatelessWidget {
                           'Full Name',
                           style: TextStyle(
                             fontWeight: FontWeight.w500,
+                            color: Color.fromARGB(136, 0, 0, 0),
+
                             fontSize: 14,
                           ),
                         ),
@@ -56,8 +58,8 @@ class EmployeesTable extends StatelessWidget {
                         SizedBox(
                           height: 20,
                           child: VerticalDivider(
-                            color: Colors.grey,
-                            thickness: 1,
+                            color: Colors.black,
+                            thickness: 0.8,
                             width: 1,
                           ),
                         ),
@@ -66,6 +68,7 @@ class EmployeesTable extends StatelessWidget {
                           'Rank',
                           style: TextStyle(
                             fontWeight: FontWeight.w500,
+                            color: Color.fromARGB(136, 0, 0, 0),
                             fontSize: 14,
                           ),
                         ),
@@ -73,8 +76,8 @@ class EmployeesTable extends StatelessWidget {
                         SizedBox(
                           height: 20,
                           child: VerticalDivider(
-                            color: Colors.grey,
-                            thickness: 1,
+                            color: Colors.black,
+                            thickness: 0.8,
                             width: 1,
                           ),
                         ),
@@ -91,6 +94,8 @@ class EmployeesTable extends StatelessWidget {
                           user == User.agent ? 'Category' : 'Status',
                           style: const TextStyle(
                             fontWeight: FontWeight.w500,
+                            color: Color.fromARGB(136, 0, 0, 0),
+
                             fontSize: 14,
                           ),
                         ),
@@ -106,8 +111,8 @@ class EmployeesTable extends StatelessWidget {
                         const SizedBox(
                           height: 20,
                           child: VerticalDivider(
-                            color: Colors.grey,
-                            thickness: 1,
+                            color: Colors.black,
+                            thickness: 0.8,
                             width: 1,
                           ),
                         ),
@@ -118,6 +123,8 @@ class EmployeesTable extends StatelessWidget {
                               : 'Body/Specialty',
                           style: const TextStyle(
                             fontWeight: FontWeight.w500,
+                            color: Color.fromARGB(136, 0, 0, 0),
+
                             fontSize: 14,
                           ),
                         ),
@@ -125,8 +132,8 @@ class EmployeesTable extends StatelessWidget {
                         const SizedBox(
                           height: 20,
                           child: VerticalDivider(
-                            color: Colors.grey,
-                            thickness: 1,
+                            color: Colors.black,
+                            thickness: 0.8,
                             width: 1,
                           ),
                         ),
@@ -147,6 +154,8 @@ class EmployeesTable extends StatelessWidget {
                               : 'Department',
                           style: const TextStyle(
                             fontWeight: FontWeight.w500,
+                            color: Color.fromARGB(136, 0, 0, 0),
+
                             fontSize: 14,
                           ),
                         ),
