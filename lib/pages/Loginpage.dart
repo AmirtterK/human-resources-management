@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hr_management/components/ForgotPasswordDialog.dart';
-import 'package:hr_management/components/PasswordFailedDialog.dart';
-import 'package:hr_management/components/PasswordSuccessDialog.dart';
 import 'package:hr_management/components/AuthinticationDialog.dart';
 
 class Loginpage extends StatelessWidget {

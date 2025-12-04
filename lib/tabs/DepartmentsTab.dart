@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hr_management/classes/Body.dart';
 import 'package:hr_management/classes/Department.dart';
-import 'package:hr_management/components/AddBodieDialog.dart';
-import 'package:hr_management/components/BodieCard.dart';
 import 'package:hr_management/components/DepartmentCard.dart';
 import 'package:hr_management/data/data.dart';
 import 'package:hr_management/tabs/ExtendedDepartmentsTab.dart';
