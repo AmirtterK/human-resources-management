@@ -10,7 +10,8 @@ The system must allow users to perform the following actions:
 - **Add Employee**: Create new employee records with detailed attributes (Rank, Category, Specialty, Department, Body).
 - **Modify Employee**: Update existing information, including promotion (rank/step adjustment).
 - **View Employees**: List all employees with status indicators (Employed, To Retire, Retired).
-- **Delete Employee**: Remove employee records (PM role only).
+- **Request Retirement for an Employee**: Send a retirement request to the ASM (PM role only).
+- **Modify Retired Emplyee**: Update existing information of a retired employee, with the authentication of the director.
 - **Search**: Filter employees by ID or Name.
 
 ### 2.2 Organization Management
@@ -19,7 +20,7 @@ The system must allow users to perform the following actions:
 - **Domains**: Manage operational domains.
 
 ### 2.3 Retirement Management
-- **Track Status**: Automatically identify employees eligible for retirement.
+- **Accept/Deny Retirement of an Employee**: Accept and deny a retirement request (ASM role only).
 - **Process Requests**: Handle retirement requests and update status to "Retired".
 
 ### 2.4 Access Control
@@ -33,7 +34,7 @@ The system must allow users to perform the following actions:
 - **Usability**: The interface must be intuitive, following Material Design guidelines.
 - **Performance**: The application should respond to user inputs within 1 second.
 - **Reliability**: API connections must handle timeouts (set to 60 seconds) gracefully.
-- **Portability**: The system must run on Windows Desktop and supports Web/Mobile compilation.
+- **Portability**: The system must run on Windows Desktop and supports.
 - **Localization**: Support for mixed content (English UI with Arabic data fields).
 
 ## 4. Textual Use Cases
