@@ -7,22 +7,25 @@ This chapter presents the static and dynamic views of the system using Unified M
 The following diagram illustrates the interactions between the primary actors (PM, Agent, Archiver) and the system's main use cases.
 
 ```mermaid
-usecaseDiagram
-    actor "PM (Project Manager)" as PM
-    actor "Agent" as Agent
-    actor "Archiver" as Archiver
+graph LR
+    %% Actors represented as circles/nodes
+    PM((PM))
+    Agent((Agent))
+    Archiver((Archiver))
 
-    package "HR Management System" {
-        usecase "Login" as UC1
-        usecase "Manage Employees" as UC2
-        usecase "Add Employee" as UC3
-        usecase "Modify Employee" as UC4
-        usecase "View Departments" as UC5
-        usecase "Manage Bodies" as UC6
-        usecase "Request Retirement" as UC7
-        usecase "View Archives" as UC8
-    }
+    %% System Boundary
+    subgraph "HR Management System"
+        UC1(Login)
+        UC2(Manage Employees)
+        UC3(Add Employee)
+        UC4(Modify Employee)
+        UC5(View Departments)
+        UC6(Manage Bodies)
+        UC7(Request Retirement)
+        UC8(View Archives)
+    end
 
+    %% Relationships
     PM --> UC1
     PM --> UC2
     PM --> UC3
@@ -40,8 +43,9 @@ usecaseDiagram
     Archiver --> UC5
     Archiver --> UC8
 
-    UC3 ..> UC2 : extends
-    UC4 ..> UC2 : extends
+    %% Extend relationships shown with dotted lines
+    UC3 -.-> UC2
+    UC4 -.-> UC2
 ```
 
 ## 3. Class Diagram
@@ -79,9 +83,6 @@ classDiagram
         +int step
         +int departmentId
         +int specialityId
-        +Employee(id, fullName, ...)
-        +fromJson(json)
-        +toJson()
     }
 
     class Department {
@@ -90,8 +91,6 @@ classDiagram
         +String headName
         +int totalStaffMembers
         +List~Employee~ employees
-        +Department(id, name, ...)
-        +fromJson(json)
     }
 
     class Body {
@@ -103,8 +102,8 @@ classDiagram
     }
 
     %% Relationships
-    Department "1" has "*" Employee : contains
-    Body "1" has "*" Employee : contains
+    Department "1" *-- "*" Employee : contains
+    Body "1" *-- "*" Employee : contains
     Employee ..> Status : uses
 ```
 
