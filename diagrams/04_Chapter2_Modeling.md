@@ -206,27 +206,6 @@ sequenceDiagram
     deactivate Dialog
 ```
 
-## 5. Deployment Diagram
-Illustrates the physical architecture of the system including the Spring Boot backend and PostgreSQL database.
-
-```mermaid
-graph TD
-    subgraph "Client Tier"
-        FlutterApp[("Flutter Application\n(Windows/Mobile/Web)")]
-    end
-
-    subgraph "Application Tier"
-        SpringBoot[("Spring Boot Server\n(Kotlin)")]
-    end
-
-    subgraph "Data Tier"
-        PostgreSQL[("PostgreSQL Database")]
-    end
-
-    FlutterApp -- "HTTPS / JSON\n(REST API)" --> SpringBoot
-    SpringBoot -- "JPA / Hibernate\n(JDBC)" --> PostgreSQL
-```
-
 ### 4.3 Modify Employee Process (PM)
 Sequence diagram for updating an existing employee's details (e.g., promotion).
 
@@ -394,4 +373,25 @@ sequenceDiagram
     deactivate FService
     UI-->>Agent: Refresh List
     deactivate UI
+```
+
+## 5. Deployment Diagram
+Illustrates the physical architecture of the system including the Spring Boot backend and PostgreSQL database.
+
+```mermaid
+graph TD
+    subgraph "Client Tier"
+        FlutterApp[("Flutter Application\n(Windows/Mobile/Web)")]
+    end
+
+    subgraph "Application Tier"
+        SpringBoot[("Spring Boot Server\n(Kotlin)")]
+    end
+
+    subgraph "Data Tier"
+        PostgreSQL[("PostgreSQL Database")]
+    end
+
+    FlutterApp -- "HTTPS / JSON\n(REST API)" --> SpringBoot
+    SpringBoot -- "JPA / Hibernate\n(JDBC)" --> PostgreSQL
 ```
