@@ -24,37 +24,38 @@ We chose **Flutter** for its ability to compile to native code for multiple plat
 - **State management**: Utilizes `setState` for local UI state and `FutureBuilder` for asynchronous data handling.
 - **Routing**: Implemented using `go_router` for deep linking and navigation simplified maintenance.
 
-### 3.2 Backend: REST API
-The system connects to a remote REST API hosted on Render (`https://hr-server-3s0m.onrender.com`).
-- **Protocol**: HTTPS (Secure HTTP)
-- **Data Format**: JSON (JavaScript Object Notation)
+### 3.2 Backend: Spring Boot (Kotlin)
+The backend is a robust REST API developed using **Spring Boot** with **Kotlin**.
+- **Framework**: Spring Boot 3.0+
+- **Language**: Kotlin 1.8+
+- **Build Tool**: Gradle (Kotlin DSL)
+- **Database**: PostgreSQL (Production) / H2 (Development)
+- **ORM**: Hibernate / Spring Data JPA
+- **Hosting**: Render.com
 
-## 4. Software Architecture: MVC
-We implemented the **Model-View-Controller (MVC)** pattern to separate concerns and improve maintainability.
+## 4. Software Architecture: Full Stack
+We implemented a **Multi-Tier Architecture** connecting the Flutter client to the Spring Boot backend.
 
-### 4.1 Model Layer
-Located in `lib/classes/` and `lib/services/`.
-- **Classes**: `Employee`, `Department`, `Body` encapsulate data and JSON serialization logic (`fromJson`, `toJson`).
-- **Services**: `EmployeeService`, `DepartmentService` handle all HTTP requests and business logic.
+### 4.1 Client Tier (Flutter)
+- **MVC Pattern**: Separates logic (Pages/Processors) from UI (Widgets).
+- **Service Layer**: HTTP clients (`EmployeeService`) act as a bridge to the backend.
 
-### 4.2 View Layer
-Located in `lib/components/` and `lib/tabs/`.
-- **Components**: Reusable widgets like `EmployeesTable`, `DepartmentCard`, `AddEmployeeDialog`.
-- **Tabs**: Screen content like `EmployeesTab`, `DepartmentsTab`.
+### 4.2 Application Tier (Spring Boot)
+- **Controller Layer**: REST endpoints (`EmployeeController`, `AuthController`) handling HTTP requests.
+- **Service Layer**: Business logic implementation (`EmployeeService`, `AuthService`).
+- **Data Access Layer**: Repositories extending `JpaRepository` for database interactions.
+- **DTO Pattern**: Data Transfer Objects isolate internal entities from API contracts.
 
-### 4.3 Controller Layer
-Located in `lib/pages/`.
-- **Pages**: `HomePage` manages global state (current tab, sidebar selection) and `LoginPage` handles authentication state.
+### 4.3 Data Tier
+- **PostgreSQL**: Relational database storing all persistent data with rigid schema enforcement.
 
 ## 5. Security Mechanisms
 
-### 5.1 Role-Based Access Control (RBAC)
-The system enforces security privileges based on user roles defined in `Code/types.dart`:
-- **PM**: Full access to modification and deletion.
-- **Agent**: Can view and modify but cannot delete critical records.
-- **Archiver**: Read-only access to historical data.
+### 5.1 Authentication & Authorization
+- **Token-Based Auth**: Users authenticate via `AuthController` to receive a session token (implementation ready).
+- **Role-Based Access Control (RBAC)**: Backend endpoints are secured based on roles (PM, Agent, Archiver).
 
 ### 5.2 Network Security
 - **HTTPS**: All API communications are encrypted.
-- **Timeouts**: API requests have a configured 60-second timeout to prevent indefinite hanging on poor connections.
-- **Error Handling**: Graceful degradation when the server is unreachable.
+- **CORS Configuration**: Restricted cross-origin resource sharing to trusted clients.
+- **Input Validation**: Backend validation (`@Valid` via Hibernate Validator) prevents SQL injection.

@@ -10,10 +10,14 @@
   - `intl`: ^0.20.2 (Localization/Formatting)
   - `popover`: ^0.3.1 (UI Component)
 
-## Backend Services
-- **API Hosting**: Render.com
-- **Architecture**: RESTful API
-- **Protocol**: HTTPS / JSON
+## Backend Stack
+- **Framework**: Spring Boot 3.0+ (Java/Kotlin ecosystem)
+- **Language**: Kotlin 1.8+
+- **Build System**: Gradle (Kotlin DSL)
+- **Database**: PostgreSQL (Production), H2 (Development)
+- **ORM**: Hibernate / Spring Data JPA
+- **Hosting**: Render.com
+- **API Architecture**: RESTful (Controllers, Services, Repositories, DTOs)
 
 ## Development Tools
 - **IDE**: Visual Studio Code (Recommended) or Android Studio
