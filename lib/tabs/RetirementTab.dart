@@ -4,6 +4,8 @@ import 'package:hr_management/classes/types.dart';
 import 'package:hr_management/components/EmployeesTable.dart';
 import 'package:hr_management/components/ModifyRetireeDialog.dart';
 import 'package:hr_management/data/data.dart';
+import 'package:hr_management/services/employee_service.dart';
+import 'package:hr_management/services/pdf_service.dart';
 import 'package:popover/popover.dart';
 
 class RetirementTab extends StatefulWidget {
@@ -15,13 +17,20 @@ class RetirementTab extends StatefulWidget {
 
 class _RetirementTabState extends State<RetirementTab> {
   final TextEditingController _searchController = TextEditingController();
+  List<Employee> _allEmployees = [];
   List<Employee> _filteredEmployees = [];
   Employee? selectedEmployee;
+  bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _updateFilteredList();
+    if (user == User.pm) {
+      _fetchEmployees();
+    } else {
+      _updateFilteredList();
+    }
     _searchController.addListener(_filterEmployees);
   }
 
@@ -31,9 +40,43 @@ class _RetirementTabState extends State<RetirementTab> {
     super.dispose();
   }
 
+  Future<void> _fetchEmployees() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final allEmployees = await EmployeeService.getEmployees();
+      
+      // Filter employees where retireRequest is true
+      final retirementRequestEmployees = allEmployees.where((employee) {
+        return employee.retireRequest == true;
+      }).toList();
+
+      setState(() {
+        _allEmployees = retirementRequestEmployees;
+        _filteredEmployees = retirementRequestEmployees;
+        _isLoading = false;
+      });
+      
+      print('Found ${retirementRequestEmployees.length} employees with retireRequest=true');
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+        _allEmployees = [];
+        _filteredEmployees = [];
+      });
+      print('Error fetching employees for retirement: $e');
+    }
+  }
+
   List<Employee> get _sourceList {
     if (user == User.archiver) {
       return retiredEmployees;
+    } else if (user == User.pm) {
+      return _allEmployees;
     } else {
       return employees.where((emp) => emp.status == Status.toRetire).toList();
     }
@@ -47,17 +90,51 @@ class _RetirementTabState extends State<RetirementTab> {
 
   void _filterEmployees() {
     final query = _searchController.text.toLowerCase();
+    final sourceList = _sourceList;
     setState(() {
       if (query.isEmpty) {
-        _filteredEmployees = _sourceList;
+        _filteredEmployees = sourceList;
       } else {
-        _filteredEmployees = _sourceList.where((employee) {
+        _filteredEmployees = sourceList.where((employee) {
           final nameMatch = employee.fullName.toLowerCase().contains(query);
           final idMatch = employee.id.toLowerCase().contains(query);
           return nameMatch || idMatch;
         }).toList();
       }
     });
+  }
+
+  Future<void> _extractEmployeeList() async {
+    if (_filteredEmployees.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No employees to export'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    try {
+      await PdfService.generateEmployeeListPDF(_filteredEmployees, title: 'To Retire');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Employee list exported successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error exporting PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -106,12 +183,12 @@ class _RetirementTabState extends State<RetirementTab> {
     return Row(
       children: [
         const Text(
-          'Employees',
+          'To Retire',
           style: TextStyle(
             letterSpacing: 1,
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: Colors.teal,
+            color: Color(0xff289581),
           ),
         ),
         const SizedBox(width: 20),
@@ -132,10 +209,10 @@ class _RetirementTabState extends State<RetirementTab> {
         ),
         const SizedBox(width: 20),
         OutlinedButton(
-          onPressed: () {},
+          onPressed: _extractEmployeeList,
           style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.teal,
-            side: const BorderSide(color: Colors.teal),
+            foregroundColor: Color(0xff289581),
+            side: const BorderSide(color: Color(0xff289581)),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(6),
@@ -143,34 +220,136 @@ class _RetirementTabState extends State<RetirementTab> {
           ),
           child: const Text('Extract List'),
         ),
-        const SizedBox(width: 12),
-        ElevatedButton(
-          onPressed: () {},
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.teal,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.only(left: 16, right: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(6),
+        if (user == User.agent) ...{
+          const SizedBox(width: 12),
+          ElevatedButton(
+            onPressed: () {},
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xff289581),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.only(left: 16, right: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Filter',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(width: 2),
+                const Icon(Icons.expand_more_rounded, size: 30),
+              ],
             ),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Filter',
-                style: TextStyle(fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(width: 2),
-              const Icon(Icons.expand_more_rounded, size: 30),
-            ],
-          ),
-        ),
+        },
       ],
     );
   }
 
   Widget _buildTableSection() {
+    if (user == User.pm && _isLoading) {
+      return Expanded(
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withValues(alpha: 0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xff289581)),
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (user == User.pm && _errorMessage != null) {
+      return Expanded(
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withValues(alpha: 0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+                const SizedBox(height: 16),
+                Text(
+                  'Error: $_errorMessage',
+                  style: const TextStyle(color: Colors.red),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _fetchEmployees,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xff289581),
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (_filteredEmployees.isEmpty) {
+      return Expanded(
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withValues(alpha: 0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.people_outline, size: 48, color: Colors.grey.shade400),
+                const SizedBox(height: 16),
+                Text(
+                  user == User.pm 
+                      ? 'No retirement requests found'
+                      : 'No employees found',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Expanded(
       child: Container(
         decoration: BoxDecoration(
@@ -220,7 +399,7 @@ class _RetirementTabState extends State<RetirementTab> {
                 alignment: Alignment.center,
                 child: const Text(
                   "Extract Certificate",
-                  style: TextStyle(color: Color(0xff0A866F), fontSize: 14),
+                  style: TextStyle(color: Color(0xff289581), fontSize: 14),
                 ),
               ),
             ),

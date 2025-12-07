@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:hr_management/classes/Department.dart';
 import 'package:hr_management/classes/Employee.dart';
 import 'package:hr_management/classes/types.dart';
-import 'package:hr_management/components/AddEmployeeDialog.dart';
 import 'package:hr_management/components/EmployeesTable.dart';
 import 'package:hr_management/components/ModifyEmployeeDialog.dart';
+import 'package:hr_management/components/AddEmployeeToDepartmentDialog.dart';
 import 'package:hr_management/data/data.dart';
+import 'package:hr_management/services/pdf_service.dart';
+import 'package:hr_management/services/employee_service.dart';
 import 'package:popover/popover.dart';
 
 class ExtendedDepartmentsTab extends StatefulWidget {
@@ -29,7 +31,9 @@ class _ExtendedDepartmentsTabState extends State<ExtendedDepartmentsTab> {
   void initState() {
     super.initState();
     _filteredEmployees = widget.department?.emloyees ?? [];
+    print('ExtendedDepartmentsTab initialized with ${_filteredEmployees.length} employees for department: ${widget.department?.name}');
     _searchController.addListener(_filterEmployees);
+    _refreshDepartmentEmployees();
   }
 
   @override
@@ -52,6 +56,40 @@ class _ExtendedDepartmentsTabState extends State<ExtendedDepartmentsTab> {
         }).toList();
       }
     });
+  }
+
+  Future<void> _extractEmployeeList() async {
+    if (_filteredEmployees.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No employees to export'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final departmentName = widget.department?.name ?? 'Department';
+      await PdfService.generateEmployeeListPDF(_filteredEmployees, title: departmentName);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Employee list exported successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error exporting PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -124,8 +162,17 @@ class _ExtendedDepartmentsTabState extends State<ExtendedDepartmentsTab> {
             letterSpacing: 1,
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: Colors.teal,
+            color: Color(0xff289581),
           ),
+        ),
+        const SizedBox(width: 12),
+        IconButton(
+          onPressed: _refreshDepartmentEmployees,
+          icon: const Icon(
+            Icons.refresh,
+            color: Color(0xff289581),
+          ),
+          tooltip: 'Refresh employees',
         ),
         const SizedBox(width: 20),
         Expanded(
@@ -144,30 +191,43 @@ class _ExtendedDepartmentsTabState extends State<ExtendedDepartmentsTab> {
           ),
         ),
         const SizedBox(width: 20),
-        if (user == User.agent)
-          OutlinedButton(
-            onPressed: () {},
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.teal,
-              side: const BorderSide(color: Colors.teal),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
-              ),
+        // Extract List button - available for all users
+        OutlinedButton(
+          onPressed: _extractEmployeeList,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Color(0xff289581),
+            side: const BorderSide(color: Color(0xff289581)),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(6),
             ),
-            child: const Text('Extract List'),
-          )
-        else
+          ),
+          child: const Text('Extract List'),
+        ),
+        // Add Employee button - only for PM users
+        if (user == User.pm) ...{
+
+          const SizedBox(width: 12),
           OutlinedButton(
             onPressed: () {
+              final depId = int.tryParse(widget.department?.id ?? '');
+              if (depId == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Invalid department id')),
+                );
+                return;
+              }
               showDialog(
                 context: context,
-                builder: (context) => AddEmployeeDialog(),
+                builder: (context) => AddEmployeeToDepartmentDialog(
+                  departmentId: depId,
+                  onAssigned: _refreshDepartmentEmployees,
+                ),
               );
             },
             style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.teal,
-              side: const BorderSide(color: Colors.teal),
+              foregroundColor: Color(0xff289581),
+              side: const BorderSide(color: Color(0xff289581)),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(6),
@@ -177,42 +237,92 @@ class _ExtendedDepartmentsTabState extends State<ExtendedDepartmentsTab> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Add Employee',
+                  'Add to Department',
                   style: TextStyle(fontWeight: FontWeight.w500),
                 ),
                 SizedBox(width: 4),
-                Icon(Icons.add),
+                Icon(Icons.group_add),
               ],
             ),
           ),
-        const SizedBox(width: 12),
-        ElevatedButton(
-          onPressed: () {},
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.teal,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.only(left: 16, right: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(6),
+        },
+        if (user == User.agent) ...{
+          const SizedBox(width: 12),
+          ElevatedButton(
+            onPressed: () {},
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xff289581),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.only(left: 16, right: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Filter',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(width: 2),
+                const Icon(Icons.expand_more_rounded, size: 30),
+              ],
             ),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Filter',
-                style: TextStyle(fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(width: 2),
-              const Icon(Icons.expand_more_rounded, size: 30),
-            ],
-          ),
-        ),
+        },
       ],
     );
   }
 
+  Future<void> _refreshDepartmentEmployees() async {
+    final depId = int.tryParse(widget.department?.id ?? '');
+    try {
+      final all = await EmployeeService.getEmployees();
+      final filtered = all.where((e) => e.departmentId == depId || (e.department.toLowerCase() == (widget.department?.name.toLowerCase() ?? ''))).toList();
+      setState(() {
+        _filteredEmployees = filtered;
+      });
+    } catch (e) {
+      print('Failed to refresh department employees: $e');
+    }
+  }
+
   Widget _buildTableSection() {
+    if (_filteredEmployees.isEmpty) {
+      return Expanded(
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withValues(alpha: 0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.people_outline, size: 48, color: Colors.grey.shade400),
+                const SizedBox(height: 16),
+                Text(
+                  'No employees found in this department',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Expanded(
       child: Container(
         decoration: BoxDecoration(

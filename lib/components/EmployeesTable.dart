@@ -85,25 +85,25 @@ class EmployeesTable extends StatelessWidget {
                     ),
                   ),
                 ),
-                DataColumn(
-                  label: Expanded(
-                    child: Row(
-                      children: [
-                        const Spacer(),
-                        Text(
-                          user == User.agent ? 'Category' : 'Status',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w500,
-                            color: Color.fromARGB(136, 0, 0, 0),
-
-                            fontSize: 14,
+                if (user != User.agent)
+                  DataColumn(
+                    label: Expanded(
+                      child: Row(
+                        children: [
+                          const Spacer(),
+                          const Text(
+                            'Status',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              color: Color.fromARGB(136, 0, 0, 0),
+                              fontSize: 14,
+                            ),
                           ),
-                        ),
-                        const Spacer(),
-                      ],
+                          const Spacer(),
+                        ],
+                      ),
                     ),
                   ),
-                ),
                 DataColumn(
                   label: Expanded(
                     child: Row(
@@ -199,11 +199,12 @@ class EmployeesTable extends StatelessWidget {
                       ),
                     ),
                     DataCell(Center(child: Text(employee.rank))),
-                    if (user == User.agent)
-                      DataCell(Center(child: Text(employee.category)))
-                    else
+                    if (user != User.agent)
                       DataCell(
-                        Center(child: StatusChip(status: employee.status)),
+                        Center(child: StatusChip(
+                          status: employee.status,
+                          retireRequest: employee.retireRequest,
+                        )),
                       ),
                     if (title == 'ExtendedBodiesTab')
                       DataCell(Center(child: Text(employee.gradeEn ?? '')))

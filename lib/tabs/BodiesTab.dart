@@ -119,7 +119,7 @@ class _BodiesTabState extends State<BodiesTab> {
                             letterSpacing: 1,
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: Colors.teal,
+                            color: Color(0xff289581),
                           ),
                         ),
                         const SizedBox(width: 20),
@@ -147,8 +147,8 @@ class _BodiesTabState extends State<BodiesTab> {
                           icon: const Icon(Icons.add, size: 18),
                           label: const Text('Add Body'),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.teal,
-                            side: const BorderSide(color: Colors.teal),
+                            foregroundColor: Color(0xff289581),
+                            side: const BorderSide(color: Color(0xff289581)),
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 12),
                             shape: RoundedRectangleBorder(
@@ -165,7 +165,7 @@ class _BodiesTabState extends State<BodiesTab> {
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                       itemCount: _filteredBodies.length,
                       itemBuilder: (context, index) {
-                        return BodyCard(
+                        return BodieCard(
                           body: _filteredBodies[index],
                           onViewDetails: () => _viewDetails(_filteredBodies[index]),
                         );

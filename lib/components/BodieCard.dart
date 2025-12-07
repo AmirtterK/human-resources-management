@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:hr_management/classes/Body.dart';
 
-class BodyCard extends StatelessWidget {
+class BodieCard extends StatelessWidget {
   final Body body;
   final VoidCallback onViewDetails;
 
-  const BodyCard({
+  const BodieCard({
     super.key,
     required this.body,
     required this.onViewDetails,
@@ -62,7 +62,7 @@ class BodyCard extends StatelessWidget {
             style: const TextStyle(
               fontSize: 14,
               color: Colors.black87,
-              fontFamily: 'Alfont'
+              fontFamily: 'Alfont',
             ),
           ),
           const SizedBox(width: 16),
@@ -75,7 +75,7 @@ class BodyCard extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           Text(
-            'Total Members :${body.totalMembers}',
+            'Total Member: ${body.totalMembers}',
             style: const TextStyle(
               fontSize: 14,
               color: Colors.black87,
@@ -86,14 +86,16 @@ class BodyCard extends StatelessWidget {
             onPressed: onViewDetails,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF09866F),
-              foregroundColor: Colors.white,
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(4),
               ),
             ),
-            child: const Text('View Details'),
+            child: const Text(
+              'View Details',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),

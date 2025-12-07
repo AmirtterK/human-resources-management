@@ -112,30 +112,7 @@ class _HomepageState extends State<Homepage> {
               ),
             ),
           ),
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(
-                  Icons.notifications_outlined,
-                  size: 30,
-                  color: Color(0xff017B64),
-                ),
-                onPressed: () {},
-              ),
-              Positioned(
-                right: 8,
-                top: 8,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: Color(0xffD45F5F),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          
         ],
       ),
       body: Row(

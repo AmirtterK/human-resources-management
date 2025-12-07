@@ -3,6 +3,7 @@ import 'package:hr_management/classes/Employee.dart';
 import 'package:hr_management/classes/types.dart';
 import 'package:hr_management/components/EmployeesTable.dart';
 import 'package:hr_management/data/data.dart';
+import 'package:hr_management/services/pdf_service.dart';
 import 'package:popover/popover.dart';
 
 class RequestsTab extends StatefulWidget {
@@ -53,6 +54,39 @@ class _RequestsTabState extends State<RequestsTab> {
         }).toList();
       }
     });
+  }
+
+  Future<void> _extractEmployeeList() async {
+    if (_filteredEmployees.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No employees to export'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    try {
+      await PdfService.generateEmployeeListPDF(_filteredEmployees, title: 'Retirees');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Employee list exported successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error exporting PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -106,7 +140,7 @@ class _RequestsTabState extends State<RequestsTab> {
             letterSpacing: 1,
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: Colors.teal,
+            color: Color(0xff289581),
           ),
         ),
         const SizedBox(width: 20),
@@ -127,7 +161,7 @@ class _RequestsTabState extends State<RequestsTab> {
         ),
         const SizedBox(width: 20),
         OutlinedButton(
-          onPressed: () {},
+          onPressed: _extractEmployeeList,
           style: OutlinedButton.styleFrom(
             foregroundColor: Colors.teal,
             side: const BorderSide(color: Colors.teal),
@@ -138,29 +172,31 @@ class _RequestsTabState extends State<RequestsTab> {
           ),
           child: const Text('Extract List'),
         ),
-        const SizedBox(width: 12),
-        ElevatedButton(
-          onPressed: () {},
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.teal,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.only(left: 16, right: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(6),
+        if (user == User.agent) ...{
+          const SizedBox(width: 12),
+          ElevatedButton(
+            onPressed: () {},
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.teal,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.only(left: 16, right: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Filter',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(width: 2),
+                const Icon(Icons.expand_more_rounded, size: 30),
+              ],
             ),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Filter',
-                style: TextStyle(fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(width: 2),
-              const Icon(Icons.expand_more_rounded, size: 30),
-            ],
-          ),
-        ),
+        },
       ],
     );
   }

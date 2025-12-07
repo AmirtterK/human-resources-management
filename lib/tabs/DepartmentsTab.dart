@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hr_management/classes/Department.dart';
 import 'package:hr_management/components/DepartmentCard.dart';
-import 'package:hr_management/data/data.dart';
 import 'package:hr_management/tabs/ExtendedDepartmentsTab.dart';
+import 'package:hr_management/services/department_service.dart';
 
 class DepartmentsTab extends StatefulWidget {
   const DepartmentsTab({super.key});
@@ -13,14 +13,17 @@ class DepartmentsTab extends StatefulWidget {
 
 class _DepartmentsTabState extends State<DepartmentsTab> {
   final TextEditingController _searchController = TextEditingController();
+  List<Department> _allDepartments = [];
   List<Department> _filteredDepartments = [];
   bool _isViewingDetails = false;
   Department? _selectedDepartment;
+  bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _filteredDepartments = departments;
+    _fetchDepartments();
     _searchController.addListener(_filterDepartments);
   }
 
@@ -30,13 +33,36 @@ class _DepartmentsTabState extends State<DepartmentsTab> {
     super.dispose();
   }
 
+  Future<void> _fetchDepartments() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final fetchedDepartments = await DepartmentService.getDepartments();
+      setState(() {
+        _allDepartments = fetchedDepartments;
+        _filteredDepartments = fetchedDepartments;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+        _allDepartments = [];
+        _filteredDepartments = [];
+      });
+    }
+  }
+
   void _filterDepartments() {
     final query = _searchController.text.toLowerCase();
     setState(() {
       if (query.isEmpty) {
-        _filteredDepartments = departments;
+        _filteredDepartments = _allDepartments;
       } else {
-        _filteredDepartments = departments.where((dept) {
+        _filteredDepartments = _allDepartments.where((dept) {
           final nameMatch = dept.name.toLowerCase().contains(query);
           final idMatch = dept.id.toLowerCase().contains(query);
           return nameMatch || idMatch;
@@ -103,8 +129,17 @@ class _DepartmentsTabState extends State<DepartmentsTab> {
                             letterSpacing: 1,
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: Colors.teal,
+                            color: Color(0xff289581),
                           ),
+                        ),
+                        const SizedBox(width: 12),
+                        IconButton(
+                          onPressed: _fetchDepartments,
+                          icon: const Icon(
+                            Icons.refresh,
+                            color: Color(0xff289581),
+                          ),
+                          tooltip: 'Refresh',
                         ),
                         const SizedBox(width: 20),
                         Expanded(
@@ -130,24 +165,59 @@ class _DepartmentsTabState extends State<DepartmentsTab> {
                   ),
                   const SizedBox(height: 24),
                   Expanded(
-                    child: GridView.builder(
-                      padding: const EdgeInsets.all(24.0),
-                      gridDelegate:
-                          const SliverGridDelegateWithMaxCrossAxisExtent(
-                        maxCrossAxisExtent: 350,
-                        crossAxisSpacing: 20,
-                        mainAxisSpacing: 20,
-                        mainAxisExtent: 300,
-                      ),
-                      itemCount: _filteredDepartments.length,
-                      itemBuilder: (context, index) {
-                        return DepartmentCard(
-                          department: _filteredDepartments[index],
-                          onSeeDetails:
-                              () => _viewDetails(_filteredDepartments[index]),
-                        );
-                      },
-                    ),
+                    child: _isLoading
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xff289581)),
+                            ),
+                          )
+                        : _errorMessage != null
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'Error: $_errorMessage',
+                                      style: const TextStyle(color: Colors.red),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    ElevatedButton(
+                                      onPressed: _fetchDepartments,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xff289581),
+                                        foregroundColor: Colors.white,
+                                      ),
+                                      child: const Text('Retry'),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : _filteredDepartments.isEmpty
+                                ? const Center(
+                                    child: Text(
+                                      'No departments found',
+                                      style: TextStyle(color: Colors.grey),
+                                    ),
+                                  )
+                                : GridView.builder(
+                                    padding: const EdgeInsets.all(24.0),
+                                    gridDelegate:
+                                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                                      maxCrossAxisExtent: 350,
+                                      crossAxisSpacing: 20,
+                                      mainAxisSpacing: 20,
+                                      mainAxisExtent: 140,
+                                    ),
+                                    itemCount: _filteredDepartments.length,
+                                    itemBuilder: (context, index) {
+                                      return DepartmentCard(
+                                        department: _filteredDepartments[index],
+                                        onSeeDetails:
+                                            () => _viewDetails(_filteredDepartments[index]),
+                                      );
+                                    },
+                                  ),
                   ),
                 ],
               ),
