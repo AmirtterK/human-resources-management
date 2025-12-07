@@ -38,11 +38,7 @@ The system must allow users to perform the following actions:
 - **Usability**: The interface must be intuitive, following Material Design guidelines.
 - **Performance**: The application should respond to user inputs within 1 second.
 - **Reliability**: API connections must handle timeouts (set to 60 seconds) gracefully.
-<<<<<<< HEAD
-- **Portability**: The system must run on Windows Desktop and supports Mobile/Web.
-=======
 - **Portability**: The system must run on Windows Desktop and supports.
->>>>>>> 5de7d859c3abc711d2d8749f63d75253646343b4
 - **Localization**: Support for mixed content (English UI with Arabic data fields).
 
 ## 4. Textual Use Cases
