@@ -3,6 +3,7 @@ import 'package:hr_management/classes/Body.dart';
 import 'package:hr_management/components/AddBodieDialog.dart';
 import 'package:hr_management/components/BodieCard.dart';
 import 'package:hr_management/data/data.dart';
+import 'package:hr_management/services/body_service.dart';
 import 'package:hr_management/tabs/ExtendedBodiesTab.dart';
 
 class BodiesTab extends StatefulWidget {
@@ -15,14 +16,36 @@ class BodiesTab extends StatefulWidget {
 class _BodiesTabState extends State<BodiesTab> {
   final TextEditingController _searchController = TextEditingController();
   List<Body> _filteredBodies = [];
+  List<Body> _bodies = [];
   bool _isViewingDetails = false;
+  bool _isLoading = true;
   Body? _selectedBody;
 
   @override
   void initState() {
     super.initState();
-    _filteredBodies = bodies;
+    _fetchBodies();
     _searchController.addListener(_filterBodies);
+  }
+
+  Future<void> _fetchBodies() async {
+    try {
+      final fetchedBodies = await BodyService.getBodies();
+      setState(() {
+        _bodies = fetchedBodies;
+        _filteredBodies = fetchedBodies;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error fetching bodies: $e');
+      setState(() {
+        _isLoading = false;
+      });
+      // Show error message
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to load bodies: $e')));
+    }
   }
 
   @override
@@ -35,13 +58,21 @@ class _BodiesTabState extends State<BodiesTab> {
     final query = _searchController.text.toLowerCase();
     setState(() {
       if (query.isEmpty) {
-        _filteredBodies = bodies;
+        _filteredBodies = _bodies;
       } else {
-        _filteredBodies = bodies.where((body) {
-          final nameEnMatch = body.nameEn.toLowerCase().contains(query);
-          final nameArMatch = body.nameAr.toLowerCase().contains(query);
+        _filteredBodies = _bodies.where((body) {
+          final codeMatch = body.code.toLowerCase().contains(query);
+          final designationFRMatch = body.designationFR.toLowerCase().contains(
+            query,
+          );
+          final designationARMatch = body.designationAR.toLowerCase().contains(
+            query,
+          );
           final idMatch = body.id.toLowerCase().contains(query);
-          return nameEnMatch || nameArMatch || idMatch;
+          return codeMatch ||
+              designationFRMatch ||
+              designationARMatch ||
+              idMatch;
         }).toList();
       }
     });
@@ -54,7 +85,7 @@ class _BodiesTabState extends State<BodiesTab> {
     ).then((bodyData) {
       if (bodyData != null) {
         setState(() {
-          bodies.add(bodyData);
+          _bodies.add(bodyData);
           _filterBodies(); // Re-filter to include new body if it matches
         });
       }
@@ -78,10 +109,7 @@ class _BodiesTabState extends State<BodiesTab> {
   @override
   Widget build(BuildContext context) {
     if (_isViewingDetails) {
-      return ExtendedBodiesTab(
-        body: _selectedBody,
-        onReturn: _returnToList,
-      );
+      return ExtendedBodiesTab(body: _selectedBody, onReturn: _returnToList);
     }
 
     return Column(
@@ -150,7 +178,9 @@ class _BodiesTabState extends State<BodiesTab> {
                             foregroundColor: Color(0xff289581),
                             side: const BorderSide(color: Color(0xff289581)),
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 12),
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(6),
                             ),
@@ -161,16 +191,29 @@ class _BodiesTabState extends State<BodiesTab> {
                   ),
                   const SizedBox(height: 20),
                   Expanded(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      itemCount: _filteredBodies.length,
-                      itemBuilder: (context, index) {
-                        return BodieCard(
-                          body: _filteredBodies[index],
-                          onViewDetails: () => _viewDetails(_filteredBodies[index]),
-                        );
-                      },
-                    ),
+                    child: _isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : _filteredBodies.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'No bodies found',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            itemCount: _filteredBodies.length,
+                            itemBuilder: (context, index) {
+                              return BodieCard(
+                                body: _filteredBodies[index],
+                                onViewDetails: () =>
+                                    _viewDetails(_filteredBodies[index]),
+                              );
+                            },
+                          ),
                   ),
                 ],
               ),

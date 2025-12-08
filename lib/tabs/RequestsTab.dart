@@ -3,6 +3,7 @@ import 'package:hr_management/classes/Employee.dart';
 import 'package:hr_management/classes/types.dart';
 import 'package:hr_management/components/EmployeesTable.dart';
 import 'package:hr_management/data/data.dart';
+import 'package:hr_management/services/employee_service.dart';
 import 'package:hr_management/services/pdf_service.dart';
 import 'package:popover/popover.dart';
 
@@ -15,14 +16,17 @@ class RequestsTab extends StatefulWidget {
 
 class _RequestsTabState extends State<RequestsTab> {
   final TextEditingController _searchController = TextEditingController();
-  List<Employee> _filteredEmployees = [];
+  List<Employee> _allRequests = [];
+  List<Employee> _filteredRequests = [];
   Employee? selectedEmployee;
+  bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _updateFilteredList();
-    _searchController.addListener(_filterEmployees);
+    _fetchRequests();
+    _searchController.addListener(_filterRequests);
   }
 
   @override
@@ -31,23 +35,38 @@ class _RequestsTabState extends State<RequestsTab> {
     super.dispose();
   }
 
-  List<Employee> get _sourceList {
-    return employees.where((emp) => emp.status == Status.toRetire).toList();
-  }
-
-  void _updateFilteredList() {
+  Future<void> _fetchRequests() async {
     setState(() {
-      _filteredEmployees = _sourceList;
+      _isLoading = true;
+      _errorMessage = null;
     });
+
+    try {
+      final requests = await EmployeeService.getRetirementRequests();
+      setState(() {
+        _allRequests = requests;
+        _filteredRequests = requests;
+        _isLoading = false;
+      });
+      print('Loaded ${requests.length} retirement requests');
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+        _allRequests = [];
+        _filteredRequests = [];
+      });
+      print('Error fetching requests: $e');
+    }
   }
 
-  void _filterEmployees() {
+  void _filterRequests() {
     final query = _searchController.text.toLowerCase();
     setState(() {
       if (query.isEmpty) {
-        _filteredEmployees = _sourceList;
+        _filteredRequests = _allRequests;
       } else {
-        _filteredEmployees = _sourceList.where((employee) {
+        _filteredRequests = _allRequests.where((employee) {
           final nameMatch = employee.fullName.toLowerCase().contains(query);
           final idMatch = employee.id.toLowerCase().contains(query);
           return nameMatch || idMatch;
@@ -57,7 +76,7 @@ class _RequestsTabState extends State<RequestsTab> {
   }
 
   Future<void> _extractEmployeeList() async {
-    if (_filteredEmployees.isEmpty) {
+    if (_filteredRequests.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('No employees to export'),
@@ -68,7 +87,7 @@ class _RequestsTabState extends State<RequestsTab> {
     }
 
     try {
-      await PdfService.generateEmployeeListPDF(_filteredEmployees, title: 'Retirees');
+      await PdfService.generateEmployeeListPDF(_filteredRequests, title: 'Retirees');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -135,7 +154,7 @@ class _RequestsTabState extends State<RequestsTab> {
     return Row(
       children: [
         const Text(
-          'Retirees',
+          'Retirement Requests',
           style: TextStyle(
             letterSpacing: 1,
             fontSize: 24,
@@ -143,7 +162,16 @@ class _RequestsTabState extends State<RequestsTab> {
             color: Color(0xff289581),
           ),
         ),
-        const SizedBox(width: 20),
+        const SizedBox(width: 12),
+        IconButton(
+          onPressed: _fetchRequests,
+          icon: Icon(
+            Icons.refresh,
+            color: Color(0xff289581),
+          ),
+          tooltip: 'Refresh data',
+        ),
+        const SizedBox(width: 8),
         Expanded(
           child: Container(
             height: 45,
@@ -202,6 +230,78 @@ class _RequestsTabState extends State<RequestsTab> {
   }
 
   Widget _buildTableSection() {
+    if (_isLoading) {
+      return Expanded(
+        child: Center(
+          child: CircularProgressIndicator(
+            color: Color(0xff289581),
+          ),
+        ),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Expanded(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+              const SizedBox(height: 16),
+              Text(
+                'Failed to load requests: $_errorMessage',
+                style: TextStyle(
+                  fontSize: 18,
+                  color: Colors.grey.shade600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: _fetchRequests,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_filteredRequests.isEmpty) {
+      return Expanded(
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withValues(alpha: 0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.inbox, size: 48, color: Colors.grey.shade400),
+                const SizedBox(height: 16),
+                Text(
+                  'No retirement requests found',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Expanded(
       child: Container(
         decoration: BoxDecoration(
@@ -217,18 +317,129 @@ class _RequestsTabState extends State<RequestsTab> {
         ),
         child: EmployeesTable(
           title: 'RequestsTab',
-          employees: _filteredEmployees,
+          employees: _filteredRequests,
           onEmployeePressed: _showEmployeeActions,
         ),
       ),
     );
   }
 
+  Future<void> _validateRequest(Employee employee) async {
+    print('Attempting to VALIDATE request for employee ${employee.id}...');
+    try {
+      // Build payload matching strict structure
+      final payload = {
+        'firstName': employee.firstName ?? (employee.fullName.split(' ').isNotEmpty ? employee.fullName.split(' ').first : ''),
+        'lastName': employee.lastName ?? (employee.fullName.split(' ').length > 1 ? employee.fullName.split(' ').sublist(1).join(' ') : ''),
+        'dateOfBirth': employee.dateOfBirth?.toIso8601String().split('T').first ?? employee.requestDate?.toIso8601String().split('T').first,
+        'address': employee.address ?? '',
+        'originalRank': employee.rank, // Assuming 'rank' maps to 'originalRank'
+        'departmentId': employee.departmentId,
+        'specialityId': employee.specialityId,
+        'step': employee.step,
+        'reference': employee.reference ?? '',
+        'retireRequest': false,
+        'status': 'RETIRED' // We must set status to retired
+      };
+
+      // Remove nulls if any, though most have fallbacks
+      payload.removeWhere((key, value) => value == null);
+      print('Sending validate payload: $payload');
+
+      final result = await EmployeeService.modifyEmployee(
+        employee.id,
+        payload,
+      );
+      
+      print('Validate result: $result');
+
+      if (!mounted) return;
+      
+      if (result['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Retirement request validated'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _fetchRequests(); // Refresh list to remove the processed item
+      } else {
+        throw Exception(result['message'] ?? 'Unknown error');
+      }
+    } catch (e) {
+      print('Error in _validateRequest: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error validating request: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _denyRequest(Employee employee) async {
+    print('Attempting to DENY request for employee ${employee.id}...');
+    try {
+      // Build payload matching strict structure
+      final payload = {
+        'firstName': employee.firstName ?? (employee.fullName.split(' ').isNotEmpty ? employee.fullName.split(' ').first : ''),
+        'lastName': employee.lastName ?? (employee.fullName.split(' ').length > 1 ? employee.fullName.split(' ').sublist(1).join(' ') : ''),
+        'dateOfBirth': employee.dateOfBirth?.toIso8601String().split('T').first ?? employee.requestDate?.toIso8601String().split('T').first,
+        'address': employee.address ?? '',
+        'originalRank': employee.rank,
+        'departmentId': employee.departmentId,
+        'specialityId': employee.specialityId,
+        'step': employee.step,
+        'reference': employee.reference ?? '',
+        'retireRequest': false,
+        // Status remains unchanged (ACTIVE)
+      };
+
+      payload.removeWhere((key, value) => value == null);
+      print('Sending deny payload: $payload');
+
+      final result = await EmployeeService.modifyEmployee(
+        employee.id,
+        payload,
+      );
+      
+      print('Deny result: $result');
+      
+      if (!mounted) return;
+      
+      if (result['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Retirement request denied'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        _fetchRequests(); // Refresh list to remove the processed item
+      } else {
+        throw Exception(result['message'] ?? 'Unknown error');
+      }
+    } catch (e) {
+      print('Error in _denyRequest: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error denying request: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   void _showEmployeeActions(Employee employee, BuildContext buttonContext) {
     setState(() {
       selectedEmployee = employee;
     });
-    double popHeight = user == User.agent ? 40 : 80;
+    // Archiver's options
+    double popHeight = 80;
+    
     showPopover(
       context: buttonContext,
       backgroundColor: Colors.white,
@@ -242,7 +453,10 @@ class _RequestsTabState extends State<RequestsTab> {
         child: Column(
           children: [
             InkWell(
-              onTap: () {},
+              onTap: () {
+                Navigator.of(buttonContext).pop();
+                _validateRequest(employee);
+              },
               child: Container(
                 color: Color(0xffEEFFFA),
                 padding: const EdgeInsets.symmetric(
@@ -251,14 +465,17 @@ class _RequestsTabState extends State<RequestsTab> {
                 ),
                 alignment: Alignment.center,
                 child: const Text(
-                  "Accept Retirement",
+                  "Validate",
                   style: TextStyle(color: Color(0xff0A866F), fontSize: 14),
                 ),
               ),
             ),
             const Divider(height: 1, thickness: 1),
             InkWell(
-              onTap: () {},
+              onTap: () {
+                Navigator.of(buttonContext).pop();
+                _denyRequest(employee);
+              },
               child: Container(
                 color: Color(0xffFFF8F8),
                 padding: const EdgeInsets.symmetric(
@@ -267,7 +484,7 @@ class _RequestsTabState extends State<RequestsTab> {
                 ),
                 alignment: Alignment.center,
                 child: const Text(
-                  "Deny Retirement",
+                  "Deny",
                   style: TextStyle(color: Colors.red, fontSize: 14),
                 ),
               ),

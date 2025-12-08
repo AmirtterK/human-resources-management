@@ -21,12 +21,14 @@ class _DomainDetailsState extends State<DomainDetails> {
   ];
   final _specialtyController = TextEditingController();
   final _gradeController = TextEditingController();
+  final _gradeArController = TextEditingController(); // Added Arabic controller
   final _codeController = TextEditingController();
 
   @override
   void dispose() {
     _specialtyController.dispose();
     _gradeController.dispose();
+    _gradeArController.dispose(); // Dispose Arabic controller
     _codeController.dispose();
     super.dispose();
   }
@@ -51,9 +53,11 @@ class _DomainDetailsState extends State<DomainDetails> {
       setState(() {
         _grades.add({
           'name': _gradeController.text,
+          'nameAr': _gradeArController.text, // Add Arabic name
           'code': _codeController.text,
         });
         _gradeController.clear();
+        _gradeArController.clear(); // Clear Arabic controller
         _codeController.clear();
       });
     }
@@ -235,11 +239,40 @@ class _DomainDetailsState extends State<DomainDetails> {
                       Row(
                         children: [
                           Expanded(
-                            flex: 2,
+                            flex: 1,
                             child: TextField(
                               controller: _gradeController,
                               decoration: InputDecoration(
-                                hintText: 'Enter Grade',
+                                hintText: 'Grade (EN)',
+                                hintStyle: const TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 13,fontWeight: FontWeight.w500,
+                                ),
+                                filled: true,
+                                fillColor: const Color.fromARGB(
+                                  255,
+                                  255,
+                                  255,
+                                  255,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 14,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            flex: 1,
+                            child: TextField(
+                              controller: _gradeArController,
+                              decoration: InputDecoration(
+                                hintText: 'Grade (AR)',
                                 hintStyle: const TextStyle(
                                   color: Colors.grey,
                                   fontSize: 13,fontWeight: FontWeight.w500,
@@ -268,7 +301,7 @@ class _DomainDetailsState extends State<DomainDetails> {
                             child: TextField(
                               controller: _codeController,
                               decoration: InputDecoration(
-                                hintText: 'Grade Code',
+                                hintText: 'Code',
                                 hintStyle: const TextStyle(
                                   color: Colors.grey,
                                   fontSize: 13,fontWeight: FontWeight.w500,
@@ -335,8 +368,30 @@ class _DomainDetailsState extends State<DomainDetails> {
                                   ),
                                 ),
                                 const SizedBox(width: 8),
+                                Expanded(
+                                  child: Container(
+                                    margin: const EdgeInsets.only(bottom: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 10,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      border: Border.all(
+                                        color: Colors.grey[300]!,
+                                      ),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Text(
+                                      _grades[index]['nameAr'] ?? '', // Display nameAr
+                                      style: const TextStyle(fontSize: 13,fontWeight: FontWeight.w500),
+                                      textAlign: TextAlign.right, // Standard for Arabic
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
                                 Container(
-                                  width: 150,
+                                  width: 80, // Slightly reduced width for code
                                   margin: const EdgeInsets.only(bottom: 8),
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 12,

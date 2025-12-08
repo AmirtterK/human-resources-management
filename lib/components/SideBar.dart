@@ -63,7 +63,7 @@ class _SideBarState extends State<SideBar> {
           },
           {
             'image': 'assets/icon/retirement.png',
-            'title': 'To Retire',
+            'title': 'Retired',
             'index': 2,
           },
         ];
@@ -77,7 +77,7 @@ class _SideBarState extends State<SideBar> {
           {'image': 'assets/icon/consult.png', 'title': 'Requests', 'index': 4},
           {
             'image': 'assets/icon/retirement.png',
-            'title': 'Retirement',
+            'title': 'Retired',
             'index': 2,
           },
           {'image': 'assets/icon/domain.png', 'title': 'Domains', 'index': 5},

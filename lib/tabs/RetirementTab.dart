@@ -26,11 +26,7 @@ class _RetirementTabState extends State<RetirementTab> {
   @override
   void initState() {
     super.initState();
-    if (user == User.pm) {
-      _fetchEmployees();
-    } else {
-      _updateFilteredList();
-    }
+    _fetchEmployees();
     _searchController.addListener(_filterEmployees);
   }
 
@@ -47,20 +43,28 @@ class _RetirementTabState extends State<RetirementTab> {
     });
 
     try {
-      final allEmployees = await EmployeeService.getEmployees();
+      // Fetch all employees including non-active ones if the API supports it
+      // The user requested to fetch from /api/pm/employees which we know returns all (or usually active + others)
+      // and filter by status != ACTIVE
+      final allEmployees = await EmployeeService.getAllEmployeesTest();
+      print('Fetched ${allEmployees.length} employees: ${allEmployees.map((e) => "${e.fullName} (${e.status})").join(", ")}');
       
-      // Filter employees where retireRequest is true
-      final retirementRequestEmployees = allEmployees.where((employee) {
-        return employee.retireRequest == true;
+      // Filter employees where status is NOT ACTIVE
+      // Assuming 'ACTIVE' is mapped to Status.employed. 
+      // If the API returns string "ACTIVE", we might need to check how it's parsed.
+      // Based on Employee.dart, status is an enum. Let's assume employed == ACTIVE.
+      
+      final retiredOrToRetireEmployees = allEmployees.where((employee) {
+        return employee.status == Status.retired;
       }).toList();
 
       setState(() {
-        _allEmployees = retirementRequestEmployees;
-        _filteredEmployees = retirementRequestEmployees;
+        _allEmployees = retiredOrToRetireEmployees;
+        _filteredEmployees = retiredOrToRetireEmployees;
         _isLoading = false;
       });
       
-      print('Found ${retirementRequestEmployees.length} employees with retireRequest=true');
+      print('Found ${retiredOrToRetireEmployees.length} retired/inactive employees');
     } catch (e) {
       setState(() {
         _errorMessage = e.toString();
@@ -72,30 +76,13 @@ class _RetirementTabState extends State<RetirementTab> {
     }
   }
 
-  List<Employee> get _sourceList {
-    if (user == User.archiver) {
-      return retiredEmployees;
-    } else if (user == User.pm) {
-      return _allEmployees;
-    } else {
-      return employees.where((emp) => emp.status == Status.toRetire).toList();
-    }
-  }
-
-  void _updateFilteredList() {
-    setState(() {
-      _filteredEmployees = _sourceList;
-    });
-  }
-
   void _filterEmployees() {
     final query = _searchController.text.toLowerCase();
-    final sourceList = _sourceList;
     setState(() {
       if (query.isEmpty) {
-        _filteredEmployees = sourceList;
+        _filteredEmployees = _allEmployees;
       } else {
-        _filteredEmployees = sourceList.where((employee) {
+        _filteredEmployees = _allEmployees.where((employee) {
           final nameMatch = employee.fullName.toLowerCase().contains(query);
           final idMatch = employee.id.toLowerCase().contains(query);
           return nameMatch || idMatch;
@@ -116,11 +103,11 @@ class _RetirementTabState extends State<RetirementTab> {
     }
 
     try {
-      await PdfService.generateEmployeeListPDF(_filteredEmployees, title: 'To Retire');
+      await PdfService.generateEmployeeListPDF(_filteredEmployees, title: 'Retired Employees');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Employee list exported successfully'),
+            content: Text('List exported successfully'),
             backgroundColor: Colors.green,
           ),
         );
@@ -130,6 +117,29 @@ class _RetirementTabState extends State<RetirementTab> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error exporting PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _extractWorkCertificate(Employee employee) async {
+    try {
+      await PdfService.generateWorkCertificatePDF(employee);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Work certificate generated successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error generating certificate: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -183,7 +193,7 @@ class _RetirementTabState extends State<RetirementTab> {
     return Row(
       children: [
         const Text(
-          'To Retire',
+          'Retired',
           style: TextStyle(
             letterSpacing: 1,
             fontSize: 24,
@@ -191,7 +201,16 @@ class _RetirementTabState extends State<RetirementTab> {
             color: Color(0xff289581),
           ),
         ),
-        const SizedBox(width: 20),
+        const SizedBox(width: 12),
+        IconButton(
+          onPressed: _fetchEmployees,
+          icon: Icon(
+            Icons.refresh,
+            color: Color(0xff289581),
+          ),
+          tooltip: 'Refresh data',
+        ),
+        const SizedBox(width: 8),
         Expanded(
           child: Container(
             height: 45,
@@ -250,7 +269,7 @@ class _RetirementTabState extends State<RetirementTab> {
   }
 
   Widget _buildTableSection() {
-    if (user == User.pm && _isLoading) {
+    if (_isLoading) {
       return Expanded(
         child: Container(
           decoration: BoxDecoration(
@@ -273,7 +292,7 @@ class _RetirementTabState extends State<RetirementTab> {
       );
     }
 
-    if (user == User.pm && _errorMessage != null) {
+    if (_errorMessage != null) {
       return Expanded(
         child: Container(
           decoration: BoxDecoration(
@@ -335,9 +354,7 @@ class _RetirementTabState extends State<RetirementTab> {
                 Icon(Icons.people_outline, size: 48, color: Colors.grey.shade400),
                 const SizedBox(height: 16),
                 Text(
-                  user == User.pm 
-                      ? 'No retirement requests found'
-                      : 'No employees found',
+                  'No retired employees found',
                   style: TextStyle(
                     fontSize: 18,
                     color: Colors.grey.shade600,
@@ -376,7 +393,9 @@ class _RetirementTabState extends State<RetirementTab> {
     setState(() {
       selectedEmployee = employee;
     });
-    double popHeight = user == User.agent ? 40 : 75;
+    // Increased height to accommodate the certificate button
+    double popHeight = 85; 
+    
     showPopover(
       context: buttonContext,
       backgroundColor: Colors.white,
@@ -390,7 +409,10 @@ class _RetirementTabState extends State<RetirementTab> {
         child: Column(
           children: [
             InkWell(
-              onTap: () {},
+              onTap: () {
+                Navigator.of(buttonContext).pop();
+                _extractWorkCertificate(employee);
+              },
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
@@ -398,14 +420,16 @@ class _RetirementTabState extends State<RetirementTab> {
                 ),
                 alignment: Alignment.center,
                 child: const Text(
-                  "Extract Certificate",
-                  style: TextStyle(color: Color(0xff289581), fontSize: 14),
+                  "Extract Work Certificate",
+                  style: TextStyle(color: Color(0xff289581), fontSize: 13),
+                  textAlign: TextAlign.center,
                 ),
               ),
             ),
             const Divider(height: 1, thickness: 1),
             InkWell(
               onTap: () {
+                Navigator.of(buttonContext).pop();
                 showDialog(
                   context: context,
                   builder: (context) => ModifyRetireeDialog(employee: employee),
@@ -417,7 +441,7 @@ class _RetirementTabState extends State<RetirementTab> {
                   vertical: 8,
                 ),
                 alignment: Alignment.center,
-                child: Text("Modify Retiree", style: TextStyle(fontSize: 14)),
+                child: const Text("Modify Retiree", style: TextStyle(fontSize: 14)),
               ),
             ),
           ],

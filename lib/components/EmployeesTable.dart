@@ -165,8 +165,7 @@ class EmployeesTable extends StatelessWidget {
                   ),
                 ),
 
-                if (!(title == 'RetirementTab' && user == User.pm) &&
-                    !(title == "ExtendedBodiesTab"))
+                if (!(title == "ExtendedBodiesTab"))
                   const DataColumn(
                     label: Expanded(child: Center(child: SizedBox(width: 48))),
                   ),
@@ -224,8 +223,7 @@ class EmployeesTable extends StatelessWidget {
                       DataCell(Center(child: Text(employee.gradeAr ?? '')))
                     else
                       DataCell(Center(child: Text(employee.department))),
-                    if (!(title == 'RetirementTab' && user == User.pm) &&
-                        !(title == "ExtendedBodiesTab"))
+                    if (!(title == "ExtendedBodiesTab"))
                       DataCell(
                         Align(
                           alignment: Alignment.centerRight,

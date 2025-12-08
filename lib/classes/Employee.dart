@@ -184,16 +184,22 @@ class Employee {
   /// Helper to parse status string to Status enum
   static Status _parseStatus(dynamic statusValue) {
     if (statusValue == null) return Status.employed;
-    final statusStr = statusValue.toString().toLowerCase();
+    final rawStatus = statusValue.toString();
+    
+    // Explicit checks for uppercase
+    if (rawStatus == 'RETIRED') return Status.retired;
+    if (rawStatus == 'TO_RETIRE') return Status.toRetire;
+    
+    final statusStr = rawStatus.toLowerCase();
+    
+    // Robust checks
+    if (statusStr.contains('retired')) return Status.retired;
+    if (statusStr.contains('retire')) return Status.toRetire;
+    
     switch (statusStr) {
       case 'active':
       case 'employed':
         return Status.employed;
-      case 'toretire':
-      case 'to_retire':
-        return Status.toRetire;
-      case 'retired':
-        return Status.retired;
       default:
         return Status.employed;
     }

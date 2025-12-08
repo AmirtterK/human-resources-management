@@ -250,41 +250,33 @@ sequenceDiagram
     end
 ```
 
-### 4.4 Filter Employees by Specialty (Agent)
-Sequence diagram for an Agent filtering and ordering employees by specialty.
+### 4.4 Filter & Search Employees (Client-Side)
+Sequence diagram for the client-side filtering of employees (Search, Department, Rank, Status).
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant Agent as "Agent (UI)"
-    participant UI as "Employees Tab"
-    participant HTTP as "HTTP / EmployeeService"
-    participant AgentCtrl as "Agent Controller\nGET /employees"
-    participant AgentSvc as "Agent Service"
-    participant Cache as "Query Cache (Redis)"
-    participant Repo as "Employee Repository"
-    participant DB as "PostgreSQL"
+    participant Flutter as "Flutter App"
+    participant HTTP as "HTTP Client"
+    participant Server as "Server API"
 
-    Agent->>UI: select specialty filter + Sort Order (e.g., Rank Desc)
-    UI->>HTTP: GET /api/agent/employees?specialtyId=xx&sort=rank,desc&page=1
-    HTTP->>AgentCtrl: request
-    AgentCtrl->>AgentSvc: getEmployeesBySpecialty(id, sort, page)
-    AgentSvc->>Cache: check key(specialtyId:sort:page)
-    alt cache hit
-        Cache-->>AgentSvc: cachedResult
-        AgentSvc-->>AgentCtrl: return cachedResult
-        AgentCtrl-->>HTTP: 200 + list
-        HTTP-->>UI: display cached list
-    else cache miss
-        AgentSvc->>Repo: findBySpecialtyId(specId, pageable(sort))
-        Repo->>DB: SELECT ... ORDER BY rank DESC LIMIT ...
-        DB-->>Repo: rows
-        Repo-->>AgentSvc: list
-        AgentSvc->>Cache: store(key, list, ttl)
-        AgentSvc-->>AgentCtrl: list
-        AgentCtrl-->>HTTP: 200
-        HTTP-->>UI: display list
-    end
+    Note over Agent, Server: 1. Initial Data Fetch
+    Agent->>Flutter: Open Employees Tab
+    Flutter->>HTTP: GET /api/employees
+    HTTP->>Server: fetchAllEmployees()
+    Server-->>HTTP: List<Employee> (JSON)
+    HTTP-->>Flutter: List<Employee>
+    Flutter->>Flutter: Store in _allEmployees
+
+    Note over Agent, Flutter: 2. Local Filtering Algorithm
+    Agent->>Flutter: Enter Search Query / Select Filter
+    activate Flutter
+    Flutter->>Flutter: _filterEmployees()
+    note right of Flutter: Filter by: <br/>1. Name/ID (contains)<br/>2. Department (exact)<br/>3. Rank (exact)<br/>4. Status (exact)
+    Flutter->>Flutter: Update _filteredEmployees
+    Flutter-->>Agent: Display Filtered List
+    deactivate Flutter
 ```
 
 ### 4.5 Request Retirement (PM)

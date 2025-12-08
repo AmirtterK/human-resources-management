@@ -170,6 +170,58 @@ class _EmployeesTabState extends State<EmployeesTab> {
     }
   }
 
+  Future<void> _requestRetirement(Employee employee) async {
+    try {
+      final nameParts = employee.fullName.trim().split(RegExp(r'\\s+'));
+      final firstName = employee.firstName ?? (nameParts.isNotEmpty ? nameParts.first : '');
+      final lastName = employee.lastName ?? (nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '');
+
+      String? dateOfBirth;
+      if (employee.dateOfBirth != null) {
+        final dob = employee.dateOfBirth!;
+        dateOfBirth =
+            '${dob.year.toString().padLeft(4, '0')}-${dob.month.toString().padLeft(2, '0')}-${dob.day.toString().padLeft(2, '0')}';
+      }
+
+      final Map<String, dynamic> payload = {
+        'firstName': firstName,
+        'lastName': lastName,
+        'dateOfBirth': dateOfBirth,
+        'address': employee.address ?? '',
+        'originalRank': employee.rank,
+        'departmentId': employee.departmentId ?? 0,
+        'specialityId': employee.specialityId ?? 0,
+        'step': employee.step,
+        'reference': employee.reference ?? '',
+        'retireRequest': true,
+      };
+      payload.removeWhere((k, v) => v == null);
+
+      final result = await EmployeeService.modifyEmployee(employee.id, payload);
+
+      if (!mounted) return;
+      if (result['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Retirement requested successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _fetchEmployees(); // Refresh list
+      } else {
+        throw Exception(result['message'] ?? 'Unknown error');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error requesting retirement: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   void _showFilterDialog() {
     showDialog(
       context: context,
@@ -372,19 +424,21 @@ class _EmployeesTabState extends State<EmployeesTab> {
           ),
         ),
         const SizedBox(width: 20),
-        // Extract List button - available for all users
-        OutlinedButton(
-          onPressed: _extractEmployeeList,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Color(0xff289581),
-            side: const BorderSide(color: Color(0xff289581)),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(6),
+        if (user != User.pm) ...{
+          // Extract List button - available for non-PM users
+          OutlinedButton(
+            onPressed: _extractEmployeeList,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Color(0xff289581),
+              side: const BorderSide(color: Color(0xff289581)),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
             ),
+            child: const Text('Extract List'),
           ),
-          child: const Text('Extract List'),
-        ),
+        },
         // Add Employee button - only for PM users
         if (user == User.pm) ...{
           const SizedBox(width: 12),
@@ -567,11 +621,16 @@ class _EmployeesTabState extends State<EmployeesTab> {
               ),
               const Divider(height: 1, thickness: 1),
               Ink(
-                color: employee.status == Status.employed
+                color: (employee.status == Status.employed && employee.retireRequest != true)
                     ? Colors.white
                     : Colors.grey.shade200,
                 child: InkWell(
-                  onTap: employee.status == Status.employed ? () {} : null,
+                  onTap: (employee.status == Status.employed && employee.retireRequest != true)
+                      ? () {
+                          Navigator.of(buttonContext).pop();
+                          _requestRetirement(employee);
+                        }
+                      : null,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
@@ -579,9 +638,9 @@ class _EmployeesTabState extends State<EmployeesTab> {
                     ),
                     alignment: Alignment.center,
                     child: Text(
-                      "To Retirement",
+                      employee.retireRequest == true ? "Retirement Requested" : "To Retirement",
                       style: TextStyle(
-                        color: employee.status == Status.employed
+                        color: (employee.status == Status.employed && employee.retireRequest != true)
                             ? Colors.red
                             : Colors.grey,
                         fontSize: 14,

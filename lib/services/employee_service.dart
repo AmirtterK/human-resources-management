@@ -35,6 +35,35 @@ class EmployeeService {
     }
   }
 
+  /// New method to fetch all employees (including retired) from test endpoint
+  static Future<List<Employee>> getAllEmployeesTest() async {
+    try {
+      print('Fetching ALL employees from $baseUrl/test/allemployees');
+      
+      final response = await http.get(
+        Uri.parse('$baseUrl/test/allemployees'),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(timeout);
+
+      print('GET all employees status: ${response.statusCode}');
+      print('GET all employees body length: ${response.body.length}');
+      // print('GET all employees body: ${response.body}'); // Uncomment if needed
+
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonList = json.decode(response.body);
+        print('Parsed ${jsonList.length} test employees');
+        return jsonList.map((jsonItem) => Employee.fromJson(jsonItem)).toList();
+      } else {
+        throw Exception('Failed to load test employees: ${response.statusCode}');
+      }
+    } on TimeoutException {
+      throw Exception('Request timed out. Server may be starting up, please try again.');
+    } catch (e) {
+      print('Error in getAllEmployeesTest: $e');
+      throw Exception('Error fetching test employees: $e');
+    }
+  }
+
   /// Create a new employee
   static Future<Map<String, dynamic>> addEmployee(Map<String, dynamic> employeeData) async {
     try {
@@ -125,6 +154,36 @@ class EmployeeService {
     } catch (e) {
       print('Error in modifyEmployee: $e');
       rethrow;
+    }
+  }
+
+  static const String asmBaseUrl = 'https://hr-server-3s0m.onrender.com/api/asm';
+
+  /// Fetch retirement requests from ASM API
+  static Future<List<Employee>> getRetirementRequests() async {
+    try {
+      print('Fetching retirement requests from $asmBaseUrl/retireRequests');
+
+      final response = await http.get(
+        Uri.parse('$asmBaseUrl/retireRequests'),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(timeout);
+
+      print('GET retirement requests status: ${response.statusCode}');
+      print('GET retirement requests body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonList = json.decode(response.body);
+        print('Parsed ${jsonList.length} retirement requests');
+        return jsonList.map((jsonItem) => Employee.fromJson(jsonItem)).toList();
+      } else {
+        throw Exception('Failed to load retirement requests: ${response.statusCode}');
+      }
+    } on TimeoutException {
+      throw Exception('Request timed out. Server may be starting up, please try again.');
+    } catch (e) {
+      print('Error in getRetirementRequests: $e');
+      throw Exception('Error fetching retirement requests: $e');
     }
   }
 
