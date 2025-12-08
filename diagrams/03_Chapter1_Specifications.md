@@ -38,37 +38,7 @@ The system must allow users to perform the following actions:
 - **Usability**: The interface must be intuitive, following Material Design guidelines.
 - **Performance**: The application should respond to user inputs within 1 second.
 - **Reliability**: API connections must handle timeouts (set to 60 seconds) gracefully.
-<<<<<<< HEAD
-- **Portability**: The system must run on Windows Desktop and supports Mobile/Web.
-=======
-- **Portability**: The system must run on Windows Desktop and supports.
->>>>>>> 5de7d859c3abc711d2d8749f63d75253646343b4
+- **Portability**: The system must run on Windows Desktop and supports web/mobile interfaces.
 - **Localization**: Support for mixed content (English UI with Arabic data fields).
 
-## 4. Textual Use Cases
 
-### 4.1 Use Case: Add Employee
-| **Element** | **Description** |
-|-------------|-----------------|
-| **Name** | Add New Employee |
-| **Actor** | Project Manager (PM) |
-| **Precondition** | User is logged in as PM |
-| **Main Scenario** | 1. PM navigates to "Employees" tab.<br>2. PM clicks "Add Employee" button.<br>3. System displays the "Add Employee" dialog.<br>4. PM fills in Full Name, selects Rank, Category, Specialty, Department.<br>5. PM clicks "Confirm".<br>6. System validates data and sends API request.<br>7. System confirms success and refreshes the list. |
-| **Alternative Flows** | 6a. Validation fails: System highlights errors.<br>6b. API Error: System shows error dialog. |
-
-### 4.2 Use Case: Modify Employee
-| **Element** | **Description** |
-|-------------|-----------------|
-| **Name** | Modify Employee / Promotion |
-| **Actor** | PM / Agent |
-| **Precondition** | Employee exists in the list |
-| **Main Scenario** | 1. User selects an employee.<br>2. User clicks "Modify".<br>3. System displays current data.<br>4. User updates fields (e.g., increments Step for promotion).<br>5. User saves changes.<br>6. System updates the record. |
-
-### 4.3 Use Case: Authentication
-| **Element** | **Description** |
-|-------------|-----------------|
-| **Name** | User Login |
-| **Actor** | All Users |
-| **Precondition** | Application is launched |
-| **Main Scenario** | 1. User launches app.<br>2. System shows Login screen.<br>3. User enters Username and Password.<br>4. System validates credentials via Auth Service.<br>5. System redirects to Home Dashboard based on role. |
-| **Postcondition** | User is authenticated. |
