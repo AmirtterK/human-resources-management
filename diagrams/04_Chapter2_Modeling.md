@@ -250,8 +250,8 @@ sequenceDiagram
     end
 ```
 
-### 4.4 Search Employees by Specialty (Agent)
-Sequence diagram for an Agent filtering employees by functionality.
+### 4.4 Filter Employees by Specialty (Agent)
+Sequence diagram for an Agent filtering and ordering employees by specialty.
 
 ```mermaid
 sequenceDiagram
@@ -265,19 +265,19 @@ sequenceDiagram
     participant Repo as "Employee Repository"
     participant DB as "PostgreSQL"
 
-    Agent->>UI: select specialty filter + page
-    UI->>HTTP: GET /api/agent/employees?specialtyId=xx&page=1
+    Agent->>UI: select specialty filter + Sort Order (e.g., Rank Desc)
+    UI->>HTTP: GET /api/agent/employees?specialtyId=xx&sort=rank,desc&page=1
     HTTP->>AgentCtrl: request
-    AgentCtrl->>AgentSvc: getEmployeesBySpecialty(id, page)
-    AgentSvc->>Cache: check key(specialtyId:page)
+    AgentCtrl->>AgentSvc: getEmployeesBySpecialty(id, sort, page)
+    AgentSvc->>Cache: check key(specialtyId:sort:page)
     alt cache hit
         Cache-->>AgentSvc: cachedResult
         AgentSvc-->>AgentCtrl: return cachedResult
         AgentCtrl-->>HTTP: 200 + list
         HTTP-->>UI: display cached list
     else cache miss
-        AgentSvc->>Repo: findBySpecialtyId(specId, pageable)
-        Repo->>DB: SELECT ... LIMIT/OFFSET
+        AgentSvc->>Repo: findBySpecialtyId(specId, pageable(sort))
+        Repo->>DB: SELECT ... ORDER BY rank DESC LIMIT ...
         DB-->>Repo: rows
         Repo-->>AgentSvc: list
         AgentSvc->>Cache: store(key, list, ttl)
