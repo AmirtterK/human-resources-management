@@ -13,34 +13,21 @@ class _ResetPasswordDialogState extends State<ResetPasswordDialog> {
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _directorsCodeController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
-
-  String? _selectedUsername;
-  // Use actual backend usernames
-  final List<Map<String, String>> _accounts = AuthService.getAvailableUsers();
 
   @override
   void dispose() {
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
     _directorsCodeController.dispose();
+    _usernameController.dispose();
     super.dispose();
   }
 
   void _handleValidate() async {
     if (_formKey.currentState!.validate()) {
-      // Validate account selection
-      if (_selectedUsername == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please select an account'),
-            backgroundColor: Color(0xffEF5350),
-          ),
-        );
-        return;
-      }
-
       // Validate passwords match
       if (_newPasswordController.text != _confirmPasswordController.text) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -60,7 +47,7 @@ class _ResetPasswordDialogState extends State<ResetPasswordDialog> {
         // Call backend API to reset password
         final success = await AuthService.resetPassword(
           _directorsCodeController.text,
-          _selectedUsername!,
+          _usernameController.text.trim(),
           _newPasswordController.text,
         );
 
@@ -159,7 +146,7 @@ class _ResetPasswordDialogState extends State<ResetPasswordDialog> {
                 const SizedBox(height: 32),
 
                 const Text(
-                  'Account',
+                  'Account Name',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -167,10 +154,10 @@ class _ResetPasswordDialogState extends State<ResetPasswordDialog> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  value: _selectedUsername,
+                TextFormField(
+                  controller: _usernameController,
                   decoration: InputDecoration(
-                    hintText: 'Choose your Account',
+                    hintText: 'Enter your username',
                     hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
                     filled: true,
                     fillColor: const Color(0xFFF5F5F5),
@@ -183,21 +170,11 @@ class _ResetPasswordDialogState extends State<ResetPasswordDialog> {
                       vertical: 14,
                     ),
                   ),
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Colors.black87,
-                  ),
-                  icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
-                  items: _accounts.map((account) {
-                    return DropdownMenuItem<String>(
-                      value: account['username'],
-                      child: Text(account['displayName']!),
-                    );
-                  }).toList(),
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      _selectedUsername = newValue;
-                    });
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter your username';
+                    }
+                    return null;
                   },
                 ),
                 const SizedBox(height: 24),
