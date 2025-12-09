@@ -15,6 +15,9 @@ class Employee {
   final int step;
   final int? departmentId; // optional, parsed from nested department
   final int? specialityId; // optional, parsed from nested speciality
+  final int? bodyId;
+  final String? bodyEn;
+  final String? bodyAr;
 
   // Fields for modify employee dialog
   final String? firstName;
@@ -38,6 +41,9 @@ class Employee {
     this.gradeAr,
     this.departmentId,
     this.specialityId,
+    this.bodyId,
+    this.bodyEn,
+    this.bodyAr,
     this.firstName,
     this.lastName,
     this.address,
@@ -102,6 +108,21 @@ class Employee {
           : int.tryParse(json['specialityId'].toString());
     }
 
+    int? bodyId;
+    String? bodyEn;
+    String? bodyAr;
+    if (json['body'] is Map) {
+      final b = json['body'] as Map;
+      final bIdRaw = b['id'] ?? b['_id'];
+      if (bIdRaw is int) {
+        bodyId = bIdRaw;
+      } else if (bIdRaw is String) {
+        bodyId = int.tryParse(bIdRaw);
+      }
+      bodyEn = (b['nameEn'] ?? b['designationFR'])?.toString();
+      bodyAr = (b['nameAr'] ?? b['designationAR'])?.toString();
+    }
+
     // Handle rank - API returns originalRank or currentRank
     String rank = json['rank'] ?? json['currentRank'] ?? json['originalRank'] ?? '';
 
@@ -154,6 +175,9 @@ class Employee {
       gradeAr: gradeAr,
       departmentId: departmentId,
       specialityId: specialityId,
+      bodyId: bodyId,
+      bodyEn: bodyEn,
+      bodyAr: bodyAr,
       firstName: firstName.isNotEmpty ? firstName : null,
       lastName: lastName.isNotEmpty ? lastName : null,
       address: address,

@@ -7,6 +7,7 @@ import 'package:hr_management/components/AddEmployeeToBodieDialog.dart';
 import 'package:hr_management/components/EmployeesTable.dart';
 import 'package:hr_management/components/ModifyEmployeeDialog.dart';
 import 'package:hr_management/data/data.dart';
+import 'package:hr_management/services/employee_service.dart';
 import 'package:popover/popover.dart';
 
 class ExtendedBodiesTab extends StatefulWidget {
@@ -24,6 +25,7 @@ class ExtendedBodiesTab extends StatefulWidget {
 class _ExtendedBodiesTabState extends State<ExtendedBodiesTab> {
   final TextEditingController _searchController = TextEditingController();
   List<Employee> _filteredEmployees = [];
+  List<Employee> _sourceEmployees = [];
   Employee? selectedEmployee;
 
   @override
@@ -31,6 +33,7 @@ class _ExtendedBodiesTabState extends State<ExtendedBodiesTab> {
     super.initState();
     _filteredEmployees = widget.body?.employees ?? [];
     _searchController.addListener(_filterEmployees);
+    _refreshBodyEmployees();
   }
 
   @override
@@ -41,7 +44,7 @@ class _ExtendedBodiesTabState extends State<ExtendedBodiesTab> {
 
   void _filterEmployees() {
     final query = _searchController.text.toLowerCase();
-    final sourceList = widget.body?.employees ?? [];
+    final sourceList = _sourceEmployees.isNotEmpty ? _sourceEmployees : (widget.body?.employees ?? []);
     setState(() {
       if (query.isEmpty) {
         _filteredEmployees = sourceList;
@@ -207,6 +210,25 @@ class _ExtendedBodiesTabState extends State<ExtendedBodiesTab> {
         ),
       ),
     );
+  }
+
+  Future<void> _refreshBodyEmployees() async {
+    final bodyId = int.tryParse(widget.body?.id ?? '');
+    try {
+      final all = await EmployeeService.getEmployees();
+      final filtered = all.where((e) {
+        final byId = bodyId != null && e.bodyId == bodyId;
+        final byEn = (widget.body?.nameEn.isNotEmpty ?? false) && (e.bodyEn?.toLowerCase() == widget.body?.nameEn.toLowerCase());
+        final byAr = (widget.body?.nameAr.isNotEmpty ?? false) && (e.bodyAr?.toLowerCase() == widget.body?.nameAr.toLowerCase());
+        return byId || byEn || byAr;
+      }).toList();
+      setState(() {
+        _sourceEmployees = filtered;
+        _filteredEmployees = filtered;
+      });
+    } catch (e) {
+      print('Failed to refresh body employees: $e');
+    }
   }
 
   void _showEmployeeActions(Employee employee, BuildContext buttonContext) {

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:hr_management/components/AddDomainDialog.dart';
 import 'package:hr_management/components/DomainCard.dart';
 import 'package:hr_management/components/DomainDetails.dart';
+import 'package:hr_management/classes/Domain.dart';
+import 'package:hr_management/services/domain_service.dart';
 
 class DomainsTab extends StatefulWidget {
   const DomainsTab({super.key});
@@ -11,16 +13,16 @@ class DomainsTab extends StatefulWidget {
 }
 
 class _DomainsTabState extends State<DomainsTab> {
-  List<String> domains = ['Surgery Domain'];
-  List<String> _filteredDomains = [];
+  List<Domain> domains = [];
+  List<Domain> _filteredDomains = [];
   final TextEditingController _searchController = TextEditingController();
   bool _isModifying = false;
-  String? _selectedDomain;
+  Domain? _selectedDomain;
 
   @override
   void initState() {
     super.initState();
-    _filteredDomains = domains;
+    _fetchDomains();
     _searchController.addListener(_filterDomains);
   }
 
@@ -37,7 +39,8 @@ class _DomainsTabState extends State<DomainsTab> {
         _filteredDomains = domains;
       } else {
         _filteredDomains = domains.where((domain) {
-          return domain.toLowerCase().contains(query);
+          return domain.name.toLowerCase().contains(query) ||
+              domain.id.toLowerCase().contains(query);
         }).toList();
       }
     });
@@ -47,20 +50,30 @@ class _DomainsTabState extends State<DomainsTab> {
     showDialog(
       context: context,
       builder: (context) => const AddDomainDialog(),
-    ).then((domainName) {
+    ).then((domainName) async {
       if (domainName != null && domainName.isNotEmpty) {
-        setState(() {
-          domains.add(domainName);
-          _filterDomains(); // Re-filter to include new domain if it matches
-        });
+        try {
+          final created = await DomainService.createDomain(domainName);
+          if (created != null) {
+            setState(() {
+              domains.insert(0, created);
+              _filterDomains();
+            });
+          } else {
+            await _fetchDomains();
+          }
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Domain created')));
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e')));
+        }
       }
     });
   }
 
-  void _modifyDomain(String domainName) {
+  void _modifyDomain(Domain domain) {
     setState(() {
       _isModifying = true;
-      _selectedDomain = domainName;
+      _selectedDomain = domain;
     });
   }
 
@@ -74,8 +87,7 @@ class _DomainsTabState extends State<DomainsTab> {
   @override
   Widget build(BuildContext context) {
     if (_isModifying) {
-      return DomainDetails(
-          domainName: _selectedDomain!, onReturn: _returnToList);
+      return DomainDetails(domainId: _selectedDomain!.id, domainName: _selectedDomain!.name, onReturn: _returnToList);
     }
 
     return Column(
@@ -159,9 +171,22 @@ class _DomainsTabState extends State<DomainsTab> {
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                       itemCount: _filteredDomains.length,
                       itemBuilder: (context, index) {
+                        final d = _filteredDomains[index];
                         return DomainCard(
-                          domainName: _filteredDomains[index],
-                          onModify: () => _modifyDomain(_filteredDomains[index]),
+                          domainName: d.name,
+                          onModify: () => _modifyDomain(d),
+                          onDelete: () async {
+                            try {
+                              await DomainService.deleteDomain(d.id);
+                              setState(() {
+                                domains.removeWhere((x) => x.id == d.id);
+                                _filteredDomains.removeWhere((x) => x.id == d.id);
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Domain deleted')));
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e')));
+                            }
+                          },
                         );
                       },
                     ),
@@ -173,5 +198,17 @@ class _DomainsTabState extends State<DomainsTab> {
         ),
       ],
     );
+  }
+
+  Future<void> _fetchDomains() async {
+    try {
+      final list = await DomainService.getDomains();
+      setState(() {
+        domains = list;
+        _filteredDomains = list;
+      });
+    } catch (e) {
+      // keep empty
+    }
   }
 }

@@ -33,38 +33,55 @@ class _AuthinticationDialogState extends State<AuthinticationDialog> {
       final username = _usernameController.text;
       final password = _passwordController.text;
 
-      // Authenticate user
-      final userRole = AuthService.authenticate(username, password);
+      try {
+        // Authenticate user via backend API
+        final userRole = await AuthService.login(username, password);
 
-      if (userRole != null) {
-        // Authentication successful
-        app_data.user = userRole; // Update global user variable
+        if (userRole != null) {
+          // Authentication successful
+          app_data.user = userRole; // Update global user variable
 
-        // Show success message
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Welcome, ${AuthService.getDisplayName(username)}!'),
-              backgroundColor: const Color(0xff0A866F),
-              duration: const Duration(seconds: 2),
-            ),
-          );
+          // Show success message
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Welcome, ${AuthService.getDisplayName(username) ?? username}!'),
+                backgroundColor: const Color(0xff0A866F),
+                duration: const Duration(seconds: 2),
+              ),
+            );
 
-          // Navigate to home page
-          context.go('/home');
+            // Navigate to home page
+            context.go('/home');
+          }
+        } else {
+          // Authentication failed
+          setState(() {
+            _isLoading = false;
+          });
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Invalid username or password'),
+                backgroundColor: Color(0xffEF5350),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
         }
-      } else {
-        // Authentication failed
+      } catch (e) {
+        // Network or other error
         setState(() {
           _isLoading = false;
         });
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Invalid username or password'),
-              backgroundColor: Color(0xffEF5350),
-              duration: Duration(seconds: 3),
+            SnackBar(
+              content: Text('Login error: $e'),
+              backgroundColor: const Color(0xffEF5350),
+              duration: const Duration(seconds: 3),
             ),
           );
         }

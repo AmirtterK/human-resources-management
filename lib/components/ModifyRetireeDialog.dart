@@ -25,6 +25,7 @@ class _ModifyRetireeDialogState extends State<ModifyRetireeDialog> {
   final _monthController = TextEditingController();
   final _yearController = TextEditingController();
   final _referenceController = TextEditingController();
+  final _directorsCodeController = TextEditingController();
 
   int? _selectedDepartmentId;
   List<Department> _departments = [];
@@ -144,11 +145,23 @@ class _ModifyRetireeDialogState extends State<ModifyRetireeDialog> {
     _monthController.dispose();
     _yearController.dispose();
     _referenceController.dispose();
+    _directorsCodeController.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
     if (_formKey.currentState!.validate()) {
+      // Validate director's code is provided
+      if (_directorsCodeController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Director's Code is required to modify retiree"),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
       setState(() => _isSubmitting = true);
 
       // Construct date string (YYYY-MM-DD)
@@ -162,7 +175,7 @@ class _ModifyRetireeDialogState extends State<ModifyRetireeDialog> {
         dobString = '$year-$month-$day';
       }
 
-      // Build payload matching strict structure required by backend
+      // Build payload matching strict structure required by backend (EmployeeDTOPM)
       final payload = {
         'firstName': _firstNameController.text.trim(),
         'lastName': _lastNameController.text.trim(),
@@ -174,14 +187,18 @@ class _ModifyRetireeDialogState extends State<ModifyRetireeDialog> {
         'step': _currentStep,
         'reference': _referenceController.text.trim(),
         'retireRequest': false,
-        'status': 'RETIRED', // Ensure status remains RETIRED
       };
 
-      // Remove nulls - though most of these fields should be populated or allowed nulls
+      // Remove nulls
       payload.removeWhere((key, value) => value == null);
 
       try {
-        await EmployeeService.modifyEmployee(widget.employee.id, payload);
+        // Use ASM endpoint with director's code authentication
+        await EmployeeService.modifyRetireeWithDirectorsCode(
+          widget.employee.id,
+          payload,
+          _directorsCodeController.text.trim(),
+        );
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -192,12 +209,23 @@ class _ModifyRetireeDialogState extends State<ModifyRetireeDialog> {
         Navigator.of(context).pop();
       } catch (e) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to modify: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        // Check if it's an invalid director's code error
+        final errorMsg = e.toString();
+        if (errorMsg.contains("Invalid Director's Code")) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Invalid Director's Code. Access denied."),
+              backgroundColor: Colors.red,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to modify: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       } finally {
         if (mounted) setState(() => _isSubmitting = false);
       }
@@ -274,7 +302,65 @@ class _ModifyRetireeDialogState extends State<ModifyRetireeDialog> {
                       color: Color(0xff0A866F),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
+
+                  // Director's Code (required for authentication)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF3E0),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFFF9800)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.security, color: Color(0xFFFF9800), size: 18),
+                            SizedBox(width: 8),
+                            Text(
+                              "Director's Code Required",
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFFE65100),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _directorsCodeController,
+                          obscureText: true,
+                          style: const TextStyle(fontSize: 13, color: Colors.black87),
+                          decoration: InputDecoration(
+                            hintText: "Enter Director's Code",
+                            hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+                            filled: true,
+                            fillColor: Colors.white,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Color(0xFFFF9800)),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Color(0xFFFF9800)),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            isDense: true,
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return "Director's Code is required";
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
 
                   // First & Last Name
                   Row(

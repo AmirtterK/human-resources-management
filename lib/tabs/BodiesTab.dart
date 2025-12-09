@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:hr_management/classes/Body.dart';
+import 'package:hr_management/classes/Employee.dart';
 import 'package:hr_management/components/AddBodieDialog.dart';
 import 'package:hr_management/components/BodieCard.dart';
 import 'package:hr_management/data/data.dart';
 import 'package:hr_management/services/body_service.dart';
+import 'package:hr_management/services/employee_service.dart';
 import 'package:hr_management/tabs/ExtendedBodiesTab.dart';
 
 class BodiesTab extends StatefulWidget {
@@ -20,6 +22,7 @@ class _BodiesTabState extends State<BodiesTab> {
   bool _isViewingDetails = false;
   bool _isLoading = true;
   Body? _selectedBody;
+  Map<String, int> _memberCounts = {};
 
   @override
   void initState() {
@@ -31,9 +34,31 @@ class _BodiesTabState extends State<BodiesTab> {
   Future<void> _fetchBodies() async {
     try {
       final fetchedBodies = await BodyService.getBodies();
+      // Fetch employees and compute member counts per body
+      List<Employee> employees = [];
+      try {
+        employees = await EmployeeService.getEmployees();
+      } catch (e) {
+        // If employees fail to load, still show bodies with 0 counts
+        print('Failed to fetch employees for counts: $e');
+      }
+
+      final Map<String, int> counts = {};
+      for (final b in fetchedBodies) {
+        final bid = int.tryParse(b.id);
+        final c = employees.where((e) {
+          final idMatch = bid != null && e.bodyId == bid;
+          final enMatch = (e.bodyEn?.toLowerCase() == b.nameEn.toLowerCase());
+          final arMatch = (e.bodyAr?.toLowerCase() == b.nameAr.toLowerCase());
+          return idMatch || enMatch || arMatch;
+        }).length;
+        counts[b.id] = c;
+      }
+
       setState(() {
         _bodies = fetchedBodies;
         _filteredBodies = fetchedBodies;
+        _memberCounts = counts;
         _isLoading = false;
       });
     } catch (e) {
@@ -82,12 +107,37 @@ class _BodiesTabState extends State<BodiesTab> {
     showDialog(
       context: context,
       builder: (context) => const AddBodyDialog(),
-    ).then((bodyData) {
+    ).then((bodyData) async {
       if (bodyData != null) {
-        setState(() {
-          _bodies.add(bodyData);
-          _filterBodies(); // Re-filter to include new body if it matches
-        });
+        final map = bodyData as Map<String, dynamic>;
+        final code = (map['id'] ?? '').toString();
+        final designationFR = (map['name'] ?? '').toString();
+        final designationAR = (map['nameAr'] ?? '').toString();
+
+        try {
+          final created = await BodyService.createBody(
+            code: code,
+            designationFR: designationFR,
+            designationAR: designationAR,
+          );
+
+          if (created != null) {
+            setState(() {
+              _bodies.insert(0, created);
+              _filterBodies();
+            });
+          } else {
+            await _fetchBodies();
+          }
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Body created successfully')),
+          );
+        } catch (e) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Failed to create body: $e')));
+        }
       }
     });
   }
@@ -150,7 +200,16 @@ class _BodiesTabState extends State<BodiesTab> {
                             color: Color(0xff289581),
                           ),
                         ),
-                        const SizedBox(width: 20),
+                        const SizedBox(width: 12),
+                        IconButton(
+                          onPressed: _fetchBodies,
+                          icon: const Icon(
+                            Icons.refresh,
+                            color: Color(0xff289581),
+                          ),
+                          tooltip: 'Refresh data',
+                        ),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Container(
                             height: 45,
@@ -207,10 +266,12 @@ class _BodiesTabState extends State<BodiesTab> {
                             padding: const EdgeInsets.symmetric(horizontal: 24),
                             itemCount: _filteredBodies.length,
                             itemBuilder: (context, index) {
+                              final b = _filteredBodies[index];
                               return BodieCard(
-                                body: _filteredBodies[index],
-                                onViewDetails: () =>
-                                    _viewDetails(_filteredBodies[index]),
+                                body: b,
+                                onViewDetails: () => _viewDetails(b),
+                                onDelete: () => _confirmDelete(b),
+                                memberCount: _memberCounts[b.id],
                               );
                             },
                           ),
@@ -222,5 +283,46 @@ class _BodiesTabState extends State<BodiesTab> {
         ),
       ],
     );
+  }
+
+  Future<void> _confirmDelete(Body body) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Body'),
+        content: Text('Are you sure you want to delete ${body.nameEn}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) {
+      await _deleteBody(body);
+    }
+  }
+
+  Future<void> _deleteBody(Body body) async {
+    try {
+      await BodyService.deleteBody(id: body.id);
+      setState(() {
+        _bodies.removeWhere((x) => x.id == body.id);
+        _filteredBodies.removeWhere((x) => x.id == body.id);
+        _memberCounts.remove(body.id);
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Body deleted')));
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to delete body: $e')));
+    }
   }
 }

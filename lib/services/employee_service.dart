@@ -204,4 +204,54 @@ class EmployeeService {
       throw Exception('Error deleting employee: $e');
     }
   }
+
+  /// Modify a retired employee with director's code authentication
+  /// Calls the ASM endpoint: PUT /api/asm/employees/{id}/modify
+  /// 
+  /// Throws an exception if director's code is invalid (401/403)
+  static Future<Map<String, dynamic>> modifyRetireeWithDirectorsCode(
+    String id, 
+    Map<String, dynamic> employeeData,
+    String directorsCode,
+  ) async {
+    try {
+      // Build the request body matching ASMModifyEmployeeRequest structure
+      final requestBody = {
+        'employeeDTOPM': employeeData,
+        'directorsCode': directorsCode,
+      };
+      
+      print('Modifying retiree $id with director\'s code: ${json.encode(requestBody)}');
+      
+      final response = await http.put(
+        Uri.parse('$asmBaseUrl/employees/$id/modify'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode(requestBody),
+      ).timeout(timeout);
+      
+      print('PUT ASM modify status: ${response.statusCode}');
+      print('PUT ASM modify body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        if (response.body.isEmpty) return {'success': true};
+        try {
+          return json.decode(response.body);
+        } catch (_) {
+          return {'success': true, 'message': response.body};
+        }
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw Exception('Invalid Director\'s Code');
+      } else {
+        throw Exception('Failed to modify retiree: ${response.statusCode} ${response.body}');
+      }
+    } on TimeoutException {
+      throw Exception('Request timed out. Server may be starting up, please try again.');
+    } catch (e) {
+      print('Error in modifyRetireeWithDirectorsCode: $e');
+      rethrow;
+    }
+  }
 }

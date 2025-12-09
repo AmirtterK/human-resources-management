@@ -80,6 +80,7 @@ class _SideBarState extends State<SideBar> {
             'title': 'Retired',
             'index': 2,
           },
+          {'image': 'assets/icon/person.png', 'title': 'Grades', 'index': 6},
           {'image': 'assets/icon/domain.png', 'title': 'Domains', 'index': 5},
         ];
     }

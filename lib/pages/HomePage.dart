@@ -7,6 +7,7 @@ import 'package:hr_management/tabs/EmployeesTab.dart';
 import 'package:hr_management/tabs/DepartmentsTab.dart';
 import 'package:hr_management/tabs/RequestsTab.dart';
 import 'package:hr_management/tabs/RetirementTab.dart';
+import 'package:hr_management/tabs/GradesTab.dart';
 import 'package:hr_management/data/data.dart';
 import 'package:hr_management/classes/types.dart';
 
@@ -39,7 +40,7 @@ class _HomepageState extends State<Homepage> {
   }
 
   void _onTabChanged(int index) {
-    setState(() { 
+    setState(() {
       selectedTabIndex = index;
     });
   }
@@ -63,8 +64,9 @@ class _HomepageState extends State<Homepage> {
         return const RequestsTab();
       case 5:
         return const DomainsTab();
-
       case 6:
+        return const GradesTab();
+      case 7:
         return const Center(child: Text('Settings'));
       default:
         return Placeholder();
@@ -112,7 +114,6 @@ class _HomepageState extends State<Homepage> {
               ),
             ),
           ),
-          
         ],
       ),
       body: Row(

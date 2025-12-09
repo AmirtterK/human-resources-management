@@ -186,7 +186,7 @@ class PdfService {
               // Certification Statement
               pw.Paragraph(
                 text: 'This certificate is issued upon request and confirms the above information is accurate as of the date of issuance.',
-                style: const pw.TextStyle(fontSize: 12, fontStyle: pw.FontStyle.italic),
+                style: pw.TextStyle(fontSize: 12, fontStyle: pw.FontStyle.italic),
               ),
               pw.SizedBox(height: 40),
 

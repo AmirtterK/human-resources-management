@@ -1,57 +1,121 @@
+import 'dart:convert';
+import 'dart:async';
+import 'package:http/http.dart' as http;
 import 'package:hr_management/classes/types.dart';
 
-/// Authentication service for validating user credentials
+/// Authentication service for validating user credentials via backend API
 /// 
-/// This service provides hardcoded credentials for three user roles.
-/// In production, this should be replaced with backend API authentication.
+/// This service communicates with the Spring Boot backend for authentication.
 class AuthService {
-  // Hardcoded user credentials for development/testing
-  static final Map<String, Map<String, dynamic>> _users = {
-    'pm_admin': {
-      'password': 'pm123456',
-      'role': User.pm,
-      'displayName': 'Personnel Manager',
-    },
-    'agent': {
-      'password': 'agent123',
-      'role': User.agent,
-      'displayName': 'Agent',
-    },
-    'archiver': {
-      'password': 'archive123',
-      'role': User.archiver,
-      'displayName': 'Archive Manager',
-    },
+  static const String baseUrl = 'https://hr-server-3s0m.onrender.com/api/auth';
+  static const Duration timeout = Duration(seconds: 60);
+
+  // Map of usernames to display names (for UI purposes)
+  static final Map<String, String> _displayNames = {
+    'pm': 'Personnel Manager',
+    'agent': 'Agent',
+    'asm': 'Archive Manager',
   };
 
-  /// Authenticates a user with username and password
+  // Map of backend role strings to frontend User enum
+  static User? _mapRoleToUser(String role) {
+    switch (role) {
+      case 'PERSONAL_MANAGER':
+        return User.pm;
+      case 'AGENT':
+        return User.agent;
+      case 'ARCHIVE_SERVICE_MANAGER':
+        return User.archiver;
+      default:
+        return null;
+    }
+  }
+
+  /// Authenticates a user with username and password via backend API
   /// 
   /// Returns the User role enum if credentials are valid, null otherwise
-  static User? authenticate(String username, String password) {
-    // Remove any whitespace
+  static Future<User?> login(String username, String password) async {
     username = username.trim();
     password = password.trim();
 
-    // Check if user exists and password matches
-    if (_users.containsKey(username)) {
-      if (_users[username]!['password'] == password) {
-        return _users[username]!['role'] as User;
-      }
-    }
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/login'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode({
+          'username': username,
+          'password': password,
+        }),
+      ).timeout(timeout);
 
-    return null;
+      if (response.statusCode == 200) {
+        // Backend returns the role as a string (e.g., "PERSONAL_MANAGER")
+        final roleString = response.body.trim();
+        return _mapRoleToUser(roleString);
+      } else {
+        // Authentication failed
+        return null;
+      }
+    } on TimeoutException {
+      throw Exception('Request timed out. Server may be starting up, please try again.');
+    } catch (e) {
+      print('Error in login: $e');
+      return null;
+    }
+  }
+
+  /// Resets password for a user using director's code
+  /// 
+  /// Returns true if reset was successful, false otherwise
+  /// Throws exception on network errors
+  static Future<bool> resetPassword(String directorsCode, String username, String newPassword) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/reset-password'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode({
+          'directorsCode': directorsCode,
+          'username': username,
+          'newPassword': newPassword,
+        }),
+      ).timeout(timeout);
+
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        // Director's code invalid or user not found
+        return false;
+      }
+    } on TimeoutException {
+      throw Exception('Request timed out. Server may be starting up, please try again.');
+    } catch (e) {
+      print('Error in resetPassword: $e');
+      throw Exception('Error resetting password: $e');
+    }
   }
 
   /// Gets the display name for a given username
   static String? getDisplayName(String username) {
-    if (_users.containsKey(username)) {
-      return _users[username]!['displayName'];
-    }
-    return null;
+    return _displayNames[username.trim()];
   }
 
-  /// Validates if a username exists
+  /// Validates if a username exists (for UI validation)
   static bool userExists(String username) {
-    return _users.containsKey(username.trim());
+    return _displayNames.containsKey(username.trim());
+  }
+
+  /// Gets the list of valid usernames for the dropdown
+  static List<Map<String, String>> getAvailableUsers() {
+    return [
+      {'username': 'pm', 'displayName': 'Personnel Manager'},
+      {'username': 'agent', 'displayName': 'Agent'},
+      {'username': 'asm', 'displayName': 'Archive Manager'},
+    ];
   }
 }

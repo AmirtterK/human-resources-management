@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hr_management/services/auth_service.dart';
 
 class ResetPasswordDialog extends StatefulWidget {
   const ResetPasswordDialog({super.key});
@@ -11,35 +12,29 @@ class ResetPasswordDialog extends StatefulWidget {
 class _ResetPasswordDialogState extends State<ResetPasswordDialog> {
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _pinCodeController = TextEditingController();
+  final _directorsCodeController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
 
-  String? _selectedAccount;
-  final List<String> _accountTypes = [
-    'Personnel Manager',
-    'Agent',
-    'Archiver Manager',
-  ];
-
-  // Director's PIN for password reset
-  static const String _directorPin = '1234';
+  String? _selectedUsername;
+  // Use actual backend usernames
+  final List<Map<String, String>> _accounts = AuthService.getAvailableUsers();
 
   @override
   void dispose() {
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
-    _pinCodeController.dispose();
+    _directorsCodeController.dispose();
     super.dispose();
   }
 
   void _handleValidate() async {
     if (_formKey.currentState!.validate()) {
-      // Validate account type selection
-      if (_selectedAccount == null) {
+      // Validate account selection
+      if (_selectedUsername == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Please select an account type'),
+            content: Text('Please select an account'),
             backgroundColor: Color(0xffEF5350),
           ),
         );
@@ -61,22 +56,40 @@ class _ResetPasswordDialogState extends State<ResetPasswordDialog> {
         _isLoading = true;
       });
 
-      // Simulate network delay
-      await Future.delayed(const Duration(seconds: 1));
+      try {
+        // Call backend API to reset password
+        final success = await AuthService.resetPassword(
+          _directorsCodeController.text,
+          _selectedUsername!,
+          _newPasswordController.text,
+        );
 
-      // Validate director's PIN
-      if (_pinCodeController.text == _directorPin) {
-        // PIN is correct - navigate to success page
-        if (mounted) {
-          context.go('/reset-success');
+        if (success) {
+          // Password reset successful - navigate to success page
+          if (mounted) {
+            context.go('/reset-success');
+          }
+        } else {
+          // Director's code invalid or other error
+          setState(() {
+            _isLoading = false;
+          });
+          if (mounted) {
+            context.go('/reset-failed');
+          }
         }
-      } else {
-        // PIN is incorrect - navigate to failure page  
+      } catch (e) {
+        // Network error
         setState(() {
           _isLoading = false;
         });
         if (mounted) {
-          context.go('/reset-failed');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: $e'),
+              backgroundColor: const Color(0xffEF5350),
+            ),
+          );
         }
       }
     }
@@ -155,9 +168,9 @@ class _ResetPasswordDialogState extends State<ResetPasswordDialog> {
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _selectedAccount,
+                  value: _selectedUsername,
                   decoration: InputDecoration(
-                    hintText: 'Choose your Account Type',
+                    hintText: 'Choose your Account',
                     hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
                     filled: true,
                     fillColor: const Color(0xFFF5F5F5),
@@ -175,15 +188,15 @@ class _ResetPasswordDialogState extends State<ResetPasswordDialog> {
                     color: Colors.black87,
                   ),
                   icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
-                  items: _accountTypes.map((String type) {
+                  items: _accounts.map((account) {
                     return DropdownMenuItem<String>(
-                      value: type,
-                      child: Text(type),
+                      value: account['username'],
+                      child: Text(account['displayName']!),
                     );
                   }).toList(),
                   onChanged: (String? newValue) {
                     setState(() {
-                      _selectedAccount = newValue;
+                      _selectedUsername = newValue;
                     });
                   },
                 ),
@@ -260,7 +273,7 @@ class _ResetPasswordDialogState extends State<ResetPasswordDialog> {
                 const SizedBox(height: 24),
 
                 const Text(
-                  'Secret PIN Code',
+                  "Director's Code",
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -269,10 +282,10 @@ class _ResetPasswordDialogState extends State<ResetPasswordDialog> {
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
-                  controller: _pinCodeController,
+                  controller: _directorsCodeController,
                   obscureText: true,
                   decoration: InputDecoration(
-                    hintText: 'Enter Your Secret PIN Code',
+                    hintText: "Enter Director's Code",
                     hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
                     filled: true,
                     fillColor: const Color(0xFFF5F5F5),
@@ -287,7 +300,7 @@ class _ResetPasswordDialogState extends State<ResetPasswordDialog> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your PIN code';
+                      return "Please enter Director's Code";
                     }
                     return null;
                   },

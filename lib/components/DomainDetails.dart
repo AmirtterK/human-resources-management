@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:hr_management/classes/Speciality.dart';
+import 'package:hr_management/services/speciality_service.dart';
 
 class DomainDetails extends StatefulWidget {
+  final String domainId;
   final String domainName;
   final VoidCallback onReturn;
 
   const DomainDetails({
     super.key,
+    required this.domainId,
     required this.domainName,
     required this.onReturn,
   });
@@ -15,58 +19,78 @@ class DomainDetails extends StatefulWidget {
 }
 
 class _DomainDetailsState extends State<DomainDetails> {
-  final List<String> _specialties = ['Breast Surgeon'];
-  final List<Map<String, String>> _grades = [
-    {'name': 'chief', 'code': '707'},
-  ];
+  final List<Speciality> _specialties = [];
   final _specialtyController = TextEditingController();
-  final _gradeController = TextEditingController();
-  final _gradeArController = TextEditingController(); // Added Arabic controller
-  final _codeController = TextEditingController();
+  bool _loading = true;
 
   @override
   void dispose() {
     _specialtyController.dispose();
-    _gradeController.dispose();
-    _gradeArController.dispose(); // Dispose Arabic controller
-    _codeController.dispose();
     super.dispose();
   }
 
-  void _addSpecialty() {
-    if (_specialtyController.text.isNotEmpty) {
-      setState(() {
-        _specialties.add(_specialtyController.text);
-        _specialtyController.clear();
-      });
-    }
-  }
-
-  void _removeSpecialty(int index) {
-    setState(() {
-      _specialties.removeAt(index);
-    });
-  }
-
-  void _addGrade() {
-    if (_gradeController.text.isNotEmpty) {
-      setState(() {
-        _grades.add({
-          'name': _gradeController.text,
-          'nameAr': _gradeArController.text, // Add Arabic name
-          'code': _codeController.text,
+  void _addSpecialty() async {
+    if (_specialtyController.text.isEmpty) return;
+    try {
+      final created = await SpecialityService.createSpeciality(
+        domainId: widget.domainId,
+        name: _specialtyController.text,
+      );
+      if (created != null) {
+        setState(() {
+          _specialties.insert(0, created);
+          _specialtyController.clear();
         });
-        _gradeController.clear();
-        _gradeArController.clear(); // Clear Arabic controller
-        _codeController.clear();
-      });
+      } else {
+        await _fetchSpecialities();
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Speciality added')));
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed: $e')));
     }
   }
 
-  void _removeGrade(int index) {
-    setState(() {
-      _grades.removeAt(index);
-    });
+  void _removeSpecialty(int index) async {
+    final spec = _specialties[index];
+    try {
+      await SpecialityService.deleteSpeciality(
+        specialityId: spec.id.toString(),
+      );
+      setState(() {
+        _specialties.removeAt(index);
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed: $e')));
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchSpecialities();
+  }
+
+  Future<void> _fetchSpecialities() async {
+    try {
+      final list = await SpecialityService.getSpecialities();
+      final did = int.tryParse(widget.domainId);
+      final filtered = list.where((s) => s.domainId == did).toList();
+      setState(() {
+        _specialties.clear();
+        _specialties.addAll(filtered);
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _loading = false;
+      });
+    }
   }
 
   @override
@@ -132,7 +156,8 @@ class _DomainDetailsState extends State<DomainDetails> {
 
                                 hintStyle: const TextStyle(
                                   color: Colors.grey,
-                                  fontSize: 13,fontWeight: FontWeight.w500,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
                                 ),
                                 filled: true,
                                 fillColor: const Color.fromARGB(
@@ -170,272 +195,72 @@ class _DomainDetailsState extends State<DomainDetails> {
                       ),
                       const SizedBox(height: 12),
                       Expanded(
-                        child: ListView.builder(
-                          itemCount: _specialties.length,
-                          itemBuilder: (context, index) {
-                            return Row(
-                              children: [
-                                Expanded(
-                                  child: Container(
-                                    margin: const EdgeInsets.only(bottom: 8),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 10,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      border: Border.all(
-                                        color: Colors.grey[300]!,
+                        child: _loading
+                            ? const Center(child: CircularProgressIndicator())
+                            : ListView.builder(
+                                itemCount: _specialties.length,
+                                itemBuilder: (context, index) {
+                                  return Row(
+                                    children: [
+                                      Expanded(
+                                        child: Container(
+                                          margin: const EdgeInsets.only(
+                                            bottom: 8,
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 10,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            border: Border.all(
+                                              color: Colors.grey[300]!,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            _specialties[index].name,
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
                                       ),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Text(
-                                      _specialties[index],
-                                      style: const TextStyle(fontSize: 13,fontWeight: FontWeight.w500),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  margin: const EdgeInsets.only(bottom: 8),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xffEF5350),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: IconButton(
-                                    onPressed: () => _removeSpecialty(index),
-                                    icon: const Icon(
-                                      Icons.remove,
-                                      color: Colors.white,
-                                    ),
-                                    iconSize: 16,
-                                    padding: const EdgeInsets.all(10),
-                                    constraints: const BoxConstraints(),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        margin: const EdgeInsets.only(
+                                          bottom: 8,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xffEF5350),
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                        ),
+                                        child: IconButton(
+                                          onPressed: () =>
+                                              _removeSpecialty(index),
+                                          icon: const Icon(
+                                            Icons.remove,
+                                            color: Colors.white,
+                                          ),
+                                          iconSize: 16,
+                                          padding: const EdgeInsets.all(10),
+                                          constraints: const BoxConstraints(),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(width: 24),
-
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'List Of Grades',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xff0A866F),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: 1,
-                            child: TextField(
-                              controller: _gradeController,
-                              decoration: InputDecoration(
-                                hintText: 'Grade (EN)',
-                                hintStyle: const TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 13,fontWeight: FontWeight.w500,
-                                ),
-                                filled: true,
-                                fillColor: const Color.fromARGB(
-                                  255,
-                                  255,
-                                  255,
-                                  255,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 14,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            flex: 1,
-                            child: TextField(
-                              controller: _gradeArController,
-                              decoration: InputDecoration(
-                                hintText: 'Grade (AR)',
-                                hintStyle: const TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 13,fontWeight: FontWeight.w500,
-                                ),
-                                filled: true,
-                                fillColor: const Color.fromARGB(
-                                  255,
-                                  255,
-                                  255,
-                                  255,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 14,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            flex: 1,
-                            child: TextField(
-                              controller: _codeController,
-                              decoration: InputDecoration(
-                                hintText: 'Code',
-                                hintStyle: const TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 13,fontWeight: FontWeight.w500,
-                                ),
-                                filled: true,
-                                fillColor: const Color.fromARGB(
-                                  255,
-                                  255,
-                                  255,
-                                  255,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 14,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: const Color(0xff0A866F),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: IconButton(
-                              onPressed: _addGrade,
-                              icon: const Icon(Icons.add, color: Colors.white),
-                              iconSize: 20,
-                              padding: const EdgeInsets.all(8),
-                              constraints: const BoxConstraints(),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: _grades.length,
-                          itemBuilder: (context, index) {
-                            return Row(
-                              children: [
-                                Expanded(
-                                  child: Container(
-                                    margin: const EdgeInsets.only(bottom: 8),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 10,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      border: Border.all(
-                                        color: Colors.grey[300]!,
-                                      ),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Text(
-                                      _grades[index]['name']!,
-                                      style: const TextStyle(fontSize: 13,fontWeight: FontWeight.w500),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Container(
-                                    margin: const EdgeInsets.only(bottom: 8),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 10,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      border: Border.all(
-                                        color: Colors.grey[300]!,
-                                      ),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Text(
-                                      _grades[index]['nameAr'] ?? '', // Display nameAr
-                                      style: const TextStyle(fontSize: 13,fontWeight: FontWeight.w500),
-                                      textAlign: TextAlign.right, // Standard for Arabic
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  width: 80, // Slightly reduced width for code
-                                  margin: const EdgeInsets.only(bottom: 8),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 10,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    
-                                    color: const Color.fromARGB(255, 255, 255, 255),
-                                    border: Border.all(
-                                      color: Colors.grey[300]!,
-                                    ),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Text(
-                                    _grades[index]['code']!,
-                                    style: const TextStyle(fontSize: 13,fontWeight: FontWeight.w500),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  margin: const EdgeInsets.only(bottom: 8),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xffEF5350),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: IconButton(
-                                    onPressed: () => _removeGrade(index),
-                                    icon: const Icon(
-                                      Icons.remove,
-                                      color: Colors.white,
-                                    ),
-                                    iconSize: 16,
-                                    padding: const EdgeInsets.all(10),
-                                    constraints: const BoxConstraints(),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ],
             ),
           ),
