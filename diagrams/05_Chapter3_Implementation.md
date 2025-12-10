@@ -37,7 +37,6 @@ The choice of a Flutter application is justified by the **administrative nature 
 | **http** | ^1.2.0 | HTTP client for REST API communication |
 | **pdf** | ^3.11.1 | PDF document generation |
 | **printing** | ^5.13.3 | Cross-platform print functionality |
-| **intl** | ^0.20.2 | Internationalization and date formatting |
 | **path_provider** | ^2.1.4 | Access to device file system directories |
 | **popover** | ^0.3.1 | Popup menu components |
 
@@ -51,39 +50,72 @@ The choice of a Flutter application is justified by the **administrative nature 
 | **Spring Data JPA** | Included | Object-Relational Mapping |
 | **Hibernate Validator** | Included | Bean validation framework |
 | **PostgreSQL** | 15+ | Production relational database |
-| **H2 Database** | Embedded | Development/testing database |
 
 ### 2.3 Infrastructure & DevOps
 
 | Component | Technology | Purpose |
 |-----------|------------|---------|
 | **Backend Hosting** | Render.com | Cloud platform for Spring Boot API |
-| **Database Hosting** | Render PostgreSQL | Managed database service |
+| **Database Hosting** | Aiven Hosting | Managed database service |
 | **Version Control** | Git / GitHub | Source code management |
 | **IDE** | Visual Studio Code | Development environment |
 | **API Testing** | Postman / Browser DevTools | Endpoint verification |
-| **Documentation** | Mermaid.js | UML diagram generation |
 
 ### 2.4 API Endpoints Structure
 
-The backend exposes RESTful endpoints organized by user role:
+The backend exposes RESTful endpoints organized by module:
 
 ```
 Base URL: https://hr-server-3s0m.onrender.com
 
-Authentication Endpoints (/api/auth):
-  POST /login                    - User authentication
-  POST /reset-password           - Password reset with director's code
+═══════════════════════════════════════════════════════════════════════════════
+AUTHENTICATION (/api/auth)
+═══════════════════════════════════════════════════════════════════════════════
+  POST /login                              - User authentication
+  POST /reset-password                     - Password reset (requires Director's Code)
 
-Personnel Manager Endpoints (/api/pm):
-  GET  /employees                - List all active employees
-  POST /employees/add            - Create new employee
-  PUT  /employees/{id}/modify    - Modify employee details
-  DELETE /employees/{id}         - Remove employee
+═══════════════════════════════════════════════════════════════════════════════
+EMPLOYEE MANAGEMENT (/api/pm)
+═══════════════════════════════════════════════════════════════════════════════
+  GET  /employees                          - List all active employees
+  GET  /test/allemployees                  - List all employees (including retired)
+  POST /employees/add                      - Create new employee
+  PUT  /employees/{id}                     - Update employee (legacy)
+  PUT  /employees/{id}/modify              - Modify employee details
+  DELETE /employees/{id}                   - Remove employee
 
-Archive Service Manager Endpoints (/api/asm):
-  GET  /retireRequests           - List retirement requests
-  PUT  /employees/{id}/modify    - Modify archived employee records
+═══════════════════════════════════════════════════════════════════════════════
+ORGANIZATIONAL STRUCTURE (/api/pm)
+═══════════════════════════════════════════════════════════════════════════════
+  GET  /departments                        - List all departments
+  GET  /bodies                             - List all bodies (corps)
+  GET  /domains                            - List all domains
+  GET  /specialties                        - List all specialties
+
+═══════════════════════════════════════════════════════════════════════════════
+BODY (CORPS) MANAGEMENT (/api/pm/agent)
+═══════════════════════════════════════════════════════════════════════════════
+  POST   /bodies/create                    - Create new body
+  PUT    /bodies/{id}/modify               - Modify body details
+  DELETE /bodies/{id}/delete               - Delete body
+
+═══════════════════════════════════════════════════════════════════════════════
+GRADE MANAGEMENT (/api/pm/bodies/{bodyId})
+═══════════════════════════════════════════════════════════════════════════════
+  GET    /grades                           - List grades for a body
+  POST   /grades/create                    - Create new grade
+  POST   /grades/{gradeId}/modify          - Modify grade
+  DELETE /grades/{gradeId}/delete          - Delete grade
+
+═══════════════════════════════════════════════════════════════════════════════
+ARCHIVE SERVICE MANAGER (/api/asm)
+═══════════════════════════════════════════════════════════════════════════════
+  GET    /retireRequests                   - List retirement requests
+  PUT    /employees/{id}/modify            - Modify archived employee (requires Director's Code)
+  POST   /domains/create                   - Create new domain
+  DELETE /domains/{id}/delete              - Delete domain
+  POST   /domains/{id}/specialities/create - Create speciality under domain
+  DELETE /specialities/{id}/delete         - Delete speciality
 ```
 
 ---
@@ -108,7 +140,7 @@ Archive Service Manager Endpoints (/api/asm):
 | **Enterprise-Grade Framework** | Spring Boot provides robust dependency injection, security, and data access layers ideal for government administration systems |
 | **Kotlin Advantages** | Null safety, concise syntax, and modern language features reduce boilerplate and potential runtime errors |
 | **Spring Data JPA** | Simplifies database operations with repository patterns and automatic query generation |
-| **Validation Framework** | Built-in `@Valid` annotations with Hibernate Validator ensure data integrity at the API level |
+Validator ensure data integrity at the API level |
 | **Scalability** | Stateless REST architecture allows horizontal scaling on cloud platforms |
 | **Security Integration** | Spring Security provides out-of-the-box authentication and authorization mechanisms |
 
@@ -116,11 +148,9 @@ Archive Service Manager Endpoints (/api/asm):
 
 | Justification | Explanation |
 |---------------|-------------|
-| **ACID Compliance** | Full transaction support essential for HR data integrity |
 | **Relational Model** | Complex relationships (Employee → Department → Body) map naturally to relational tables |
 | **JSON Support** | PostgreSQL's JSONB type offers flexibility for storing semi-structured data |
 | **Open Source** | No licensing costs for government deployments |
-| **Cloud Integration** | Native support on Render.com with automatic backups |
 
 ### 3.4 Why Render.com for Hosting?
 
