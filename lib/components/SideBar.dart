@@ -61,11 +61,6 @@ class _SideBarState extends State<SideBar> {
             'title': 'Departments',
             'index': 1,
           },
-          {
-            'image': 'assets/icon/retirement.png',
-            'title': 'Retired',
-            'index': 2,
-          },
         ];
       case User.agent:
         return [

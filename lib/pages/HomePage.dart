@@ -20,7 +20,24 @@ class Homepage extends StatefulWidget {
 
 class _HomepageState extends State<Homepage> {
   bool isExpanded = true;
-  int selectedTabIndex = 0;
+  late int selectedTabIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    // Set default tab based on user role
+    switch (user) {
+      case User.pm:
+        selectedTabIndex = 0; // Employees
+        break;
+      case User.agent:
+        selectedTabIndex = 0; // Employees
+        break;
+      case User.archiver:
+        selectedTabIndex = 4; // Requests
+        break;
+    }
+  }
 
   String _getUserRoleTitle() {
     switch (user) {
