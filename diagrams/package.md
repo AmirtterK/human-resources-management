@@ -1,23 +1,6 @@
 # Package Diagram - Human Resource Management System
 
-This document presents the package diagram for the complete HR Management System, showing both the **Flutter Frontend** and **Spring Boot Backend** architectures and their relationships.
-
-----
-
-## System Overview
-
-```mermaid
-graph TB
-    subgraph "HR Management System"
-        direction TB
-        FE["Frontend (Flutter)"]
-        BE["Backend (Spring Boot/Kotlin)"]
-        DB[(PostgreSQL Database)]
-        
-        FE <-->|HTTP/REST API| BE
-        BE <-->|JPA/Hibernate| DB
-    end
-```
+This document presents the UML Package Diagram for the HR Management System, showing the **logical organization** of the system with package dependencies between layers.
 
 ---
 
@@ -25,250 +8,181 @@ graph TB
 
 ```mermaid
 graph TB
-    subgraph Frontend["Frontend - Flutter Application"]
+    subgraph HRManagement["HRManagement"]
         direction TB
         
-        subgraph FE_UI["ui"]
-            subgraph FE_Pages["pages"]
-                LoginPage["LoginPage"]
-                HomePage["HomePage"]
-            end
-            
-            subgraph FE_Tabs["tabs"]
-                EmployeesTab["EmployeesTab"]
-                DepartmentsTab["DepartmentsTab"]
-                BodiesTab["BodiesTab"]
-                RetirementTab["RetirementTab"]
-                RequestsTab["RequestsTab"]
-                DomainsTab["DomainsTab"]
-                GradesTab["GradesTab"]
-                ExtendedBodiesTab["ExtendedBodiesTab"]
-                ExtendedDepartmentsTab["ExtendedDepartmentsTab"]
-                ExtendedGradesTab["ExtendedGradesTab"]
-            end
-            
-            subgraph FE_Components["components"]
-                SideBar["SideBar"]
-                EmployeesTable["EmployeesTable"]
-                StatusChip["StatusChip"]
-                DepartmentCard["DepartmentCard"]
-                BodieCard["BodieCard"]
-                DomainCard["DomainCard"]
-                AuthDialog["AuthinticationDialog"]
-                AddEmployeeDialog["AddEmployeeDialog"]
-                ModifyEmployeeDialog["ModifyEmployeeDialog"]
-                ModifyRetireeDialog["ModifyRetireeDialog"]
-                ForgotPasswordDialog["ForgotPasswordDialog"]
-            end
+        subgraph UI["UI"]
+            Pages["Pages<br/>─────────<br/>LoginPage<br/>HomePage"]
+            Views["Views<br/>─────────<br/>EmployeesView<br/>DepartmentsView<br/>BodiesView<br/>RetirementView<br/>RequestsView<br/>DomainsView<br/>GradesView"]
+            Components["Components<br/>─────────<br/>SideBar<br/>EmployeesTable<br/>StatusChip<br/>Cards<br/>Dialogs"]
         end
         
-        subgraph FE_Services["services"]
-            AuthService["auth_service"]
-            EmployeeService["employee_service"]
-            DepartmentService["department_service"]
-            BodyService["body_service"]
-            DomainService["domain_service"]
-            GradeService["grade_service"]
-            SpecialityService["speciality_service"]
-            PdfService["pdf_service"]
+        subgraph Application["Application Services"]
+            AuthService["AuthService"]
+            EmployeeService["EmployeeService"]
+            DepartmentService["DepartmentService"]
+            BodyService["BodyService"]
+            DomainService["DomainService"]
+            GradeService["GradeService"]
+            SpecialityService["SpecialityService"]
+            PdfService["PdfService"]
         end
         
-        subgraph FE_Domain["domain"]
-            subgraph FE_Classes["classes"]
-                Employee["Employee"]
-                Department["Department"]
-                Body["Body"]
-                Domain["Domain"]
-                Grade["Grade"]
-                Speciality["Speciality"]
-                Types["types (User, Status)"]
-            end
-            
-            subgraph FE_Data["data"]
-                AppData["data.dart"]
-            end
+        subgraph Domain["Domain Model"]
+            Employee["Employee"]
+            Department["Department"]
+            Body["Body"]
+            Domain["Domain"]
+            Grade["Grade"]
+            Speciality["Speciality"]
+            User["User"]
+            Enums["«enumeration»<br/>Status<br/>Role<br/>Rank"]
+        end
+        
+        subgraph Persistence["Persistence"]
+            EmployeeRepository["EmployeeRepository"]
+            DepartmentRepository["DepartmentRepository"]
+            BodyRepository["BodyRepository"]
+            DomainRepository["DomainRepository"]
+            GradeRepository["GradeRepository"]
+            SpecialityRepository["SpecialityRepository"]
+            UserRepository["UserRepository"]
+        end
+        
+        subgraph Infrastructure["Infrastructure"]
+            DatabaseConfig["DatabaseConfig"]
+            ExceptionHandler["ExceptionHandler"]
+            APIConfig["APIConfig"]
         end
     end
     
-    subgraph Backend["Backend - Spring Boot (Kotlin)"]
-        direction TB
-        
-        subgraph BE_Controllers["controllers"]
-            ASMController["ASMController"]
-            AgentController["AgentController"]
-            PMController["PersonnelManagerController"]
-            AuthController["AuthController"]
-            CommonController["CommonController"]
-        end
-        
-        subgraph BE_Services["services"]
-            ASMService["ASMService"]
-            AgentService["AgentService"]
-            PMService["PersonnelManagerService"]
-            UserAuthService["UserAuthService"]
-            CommonService["CommonService"]
-        end
-        
-        subgraph BE_DTOs["dto"]
-            EmployeeDTOPM["EmployeeDTOPM"]
-            BodyDTO["BodyDTO"]
-            GradeDTO["GradeDTO"]
-        end
-        
-        subgraph BE_Models["models"]
-            BE_Employee["Employee"]
-            BE_Department["Department"]
-            BE_Body["Body"]
-            BE_Domain["Domain"]
-            BE_Grade["Grade"]
-            BE_Speciality["Speciality"]
-            BE_User["User"]
-            BE_Role["Role"]
-            BE_Rank["Rank"]
-            BE_Status["Status"]
-        end
-        
-        subgraph BE_Repositories["repositories"]
-            EmployeeRepo["EmployeeRepository"]
-            DepartmentRepo["DepartmentRepository"]
-            BodyRepo["BodyRepository"]
-            DomainRepo["DomainRepository"]
-            GradeRepo["GradeRepository"]
-            SpecialityRepo["SpecialityRepository"]
-            UserRepo["UserRepository"]
-        end
-        
-        subgraph BE_Core["core"]
-            HrServerApp["HrServerApplication"]
-            DbInit["DatabaseInitializer"]
-            Exceptions["Exceptions"]
-            ExHandler["GlobalExceptionHandler"]
-        end
-    end
-    
-    subgraph Database["PostgreSQL Database"]
-        direction TB
-        DB_Tables[("employees<br/>departments<br/>bodies<br/>domains<br/>grades<br/>specialities<br/>users")]
-    end
-
-    %% Frontend internal dependencies
-    FE_Pages --> FE_Tabs
-    FE_Pages --> FE_Components
-    FE_Tabs --> FE_Components
-    FE_Tabs --> FE_Services
-    FE_Components --> FE_Services
-    FE_Components --> FE_Classes
-    FE_Services --> FE_Classes
-    FE_Tabs --> FE_Classes
-    FE_Data --> FE_Classes
-    
-    %% Backend internal dependencies
-    BE_Controllers --> BE_Services
-    BE_Controllers --> BE_DTOs
-    BE_Services --> BE_Repositories
-    BE_Services --> BE_Models
-    BE_DTOs --> BE_Models
-    BE_Repositories --> BE_Models
-    BE_Core --> BE_Models
-    
-    %% Cross-layer communication
-    FE_Services <-.->|REST API| BE_Controllers
-    BE_Repositories <-.->|JPA| Database
+    %% Dependencies (dashed arrows)
+    UI -.->|uses| Application
+    UI -.->|displays| Domain
+    Application -.->|manipulates| Domain
+    Application -.->|calls| Persistence
+    Persistence -.->|persists| Domain
+    Persistence -.->|uses| Infrastructure
+    Application -.->|uses| Infrastructure
 ```
 
 ---
 
-## Frontend Package Structure
-
-| Package | Description | Key Files |
-|---------|-------------|-----------|
-| **pages** | Main application screens | `LoginPage`, `HomePage` |
-| **tabs** | Content tabs for different modules | `EmployeesTab`, `DepartmentsTab`, `RequestsTab`, etc. |
-| **components** | Reusable UI widgets | `SideBar`, `EmployeesTable`, `StatusChip`, dialogs |
-| **services** | API communication layer | `employee_service`, `auth_service`, `pdf_service`, etc. |
-| **classes** | Domain models | `Employee`, `Department`, `Body`, `Domain`, `Grade` |
-| **data** | Application state | `data.dart` (global state) |
-
----
-
-## Backend Package Structure
-
-| Package | Description | Key Files |
-|---------|-------------|-----------|
-| **controllers** | REST API endpoints | `ASMController`, `PMController`, `AgentController` |
-| **services** | Business logic layer | `ASMService`, `PersonnelManagerService`, `AgentService` |
-| **dto** | Data Transfer Objects | `EmployeeDTOPM`, `BodyDTO`, `GradeDTO` |
-| **models** | JPA entities | `Employee`, `Department`, `Body`, `User`, `Role` |
-| **repositories** | Data access layer | `EmployeeRepository`, `DepartmentRepository`, etc. |
-| **core** | Application setup | `HrServerApplication`, `DatabaseInitializer` |
-
----
-
-## Layer Dependencies
-
-```mermaid
-graph LR
-    subgraph "Frontend Layers"
-        UI["UI Layer<br/>(pages, tabs, components)"]
-        SVC["Service Layer<br/>(services)"]
-        DOM["Domain Layer<br/>(classes, data)"]
-        
-        UI --> SVC
-        UI --> DOM
-        SVC --> DOM
-    end
-    
-    subgraph "Backend Layers"
-        CTRL["Controller Layer<br/>(controllers)"]
-        BSVC["Service Layer<br/>(services)"]
-        REPO["Repository Layer<br/>(repositories)"]
-        MDL["Model Layer<br/>(models, dto)"]
-        
-        CTRL --> BSVC
-        CTRL --> MDL
-        BSVC --> REPO
-        BSVC --> MDL
-        REPO --> MDL
-    end
-    
-    SVC <-.->|HTTP| CTRL
-```
-
----
-
-## User Role Access Mapping
+## Layered Architecture View
 
 ```mermaid
 graph TB
-    subgraph "Role-Based Access"
-        PM["Personnel Manager (PM)"]
-        Agent["Agent"]
-        ASM["Archive Manager (ASM)"]
+    subgraph "Presentation Layer"
+        UI_Pkg["UI<br/>─────────<br/>• Pages<br/>• Views<br/>• Components<br/>• Dialogs"]
     end
     
-    subgraph "Backend Controllers"
-        PMCtrl["PersonnelManagerController<br/>/api/pm/*"]
-        AgentCtrl["AgentController<br/>/api/agent/*"]
-        ASMCtrl["ASMController<br/>/api/asm/*"]
-        CommonCtrl["CommonController<br/>/api/common/*"]
+    subgraph "Application Layer"
+        App_Pkg["Application Services<br/>─────────<br/>• AuthService<br/>• EmployeeService<br/>• DepartmentService<br/>• BodyService<br/>• GradeService<br/>• PdfService"]
     end
     
-    PM --> PMCtrl
-    Agent --> AgentCtrl
-    ASM --> ASMCtrl
-    PM --> CommonCtrl
-    Agent --> CommonCtrl
-    ASM --> CommonCtrl
+    subgraph "Domain Layer"
+        Domain_Pkg["Domain Model<br/>─────────<br/>• Employee<br/>• Department<br/>• Body<br/>• Domain<br/>• Grade<br/>• Speciality<br/>• User"]
+    end
+    
+    subgraph "Persistence Layer"
+        Persistence_Pkg["Persistence<br/>─────────<br/>• EmployeeRepository<br/>• DepartmentRepository<br/>• BodyRepository<br/>• GradeRepository<br/>• UserRepository"]
+    end
+    
+    subgraph "Infrastructure Layer"
+        Infra_Pkg["Infrastructure<br/>─────────<br/>• Database<br/>• ExceptionHandler<br/>• Configuration"]
+    end
+    
+    UI_Pkg -.->|depends on| App_Pkg
+    UI_Pkg -.->|depends on| Domain_Pkg
+    App_Pkg -.->|depends on| Domain_Pkg
+    App_Pkg -.->|depends on| Persistence_Pkg
+    Persistence_Pkg -.->|depends on| Domain_Pkg
+    Persistence_Pkg -.->|depends on| Infra_Pkg
 ```
 
 ---
 
-## Technology Stack Summary
+## Domain Package Details
 
-| Layer | Technology |
-|-------|------------|
-| **Frontend** | Flutter (Dart) |
-| **Backend** | Spring Boot (Kotlin) |
-| **Database** | PostgreSQL |
-| **API** | REST (JSON) |
-| **ORM** | Spring Data JPA / Hibernate |
+```mermaid
+graph TB
+    subgraph Domain["Domain"]
+        subgraph Entities["Entities"]
+            Employee["Employee"]
+            Department["Department"]
+            Body["Body"]
+            DomainEntity["Domain"]
+            Grade["Grade"]
+            Speciality["Speciality"]
+            User["User"]
+        end
+        
+        subgraph ValueObjects["Value Objects / Enumerations"]
+            Status["«enumeration»<br/>Status<br/>─────────<br/>EMPLOYED<br/>TO_RETIRE<br/>RETIRED"]
+            Role["«enumeration»<br/>Role<br/>─────────<br/>PM<br/>AGENT<br/>ARCHIVER"]
+            Rank["«enumeration»<br/>Rank<br/>─────────<br/>PRINCIPAL<br/>NORMAL<br/>EXCEPTIONAL"]
+        end
+    end
+    
+    Employee -.-> Status
+    Employee -.-> Rank
+    Employee -.-> Department
+    Employee -.-> Body
+    Employee -.-> Grade
+    User -.-> Role
+    Body -.-> DomainEntity
+    Grade -.-> Speciality
+    Speciality -.-> Body
+```
+
+---
+
+## Application Services Package Details
+
+```mermaid
+graph TB
+    subgraph ApplicationServices["Application Services"]
+        subgraph Authentication["Authentication"]
+            AuthSvc["AuthService<br/>─────────<br/>+ login()<br/>+ logout()<br/>+ resetPassword()"]
+            UserAuthSvc["UserAuthService<br/>─────────<br/>+ validateCredentials()<br/>+ verifyDirectorCode()"]
+        end
+        
+        subgraph EmployeeManagement["Employee Management"]
+            EmpSvc["EmployeeService<br/>─────────<br/>+ getAllEmployees()<br/>+ addEmployee()<br/>+ modifyEmployee()<br/>+ deleteEmployee()"]
+        end
+        
+        subgraph OrganizationManagement["Organization Management"]
+            DeptSvc["DepartmentService<br/>─────────<br/>+ getDepartments()<br/>+ addDepartment()"]
+            BodySvc["BodyService<br/>─────────<br/>+ getBodies()<br/>+ addBody()"]
+            DomainSvc["DomainService<br/>─────────<br/>+ getDomains()<br/>+ addDomain()"]
+            GradeSvc["GradeService<br/>─────────<br/>+ getGrades()<br/>+ addGrade()"]
+        end
+        
+        subgraph Utilities["Utilities"]
+            PdfSvc["PdfService<br/>─────────<br/>+ generatePDF()<br/>+ generateCertificate()"]
+        end
+    end
+```
+
+---
+
+## Package Dependencies Summary
+
+| Package | Depends On | Description |
+|---------|------------|-------------|
+| **UI** | Application Services, Domain | User interface layer displaying domain data |
+| **Application Services** | Domain, Persistence | Business logic and use case orchestration |
+| **Domain** | - | Core business entities and enumerations |
+| **Persistence** | Domain, Infrastructure | Data access repositories |
+| **Infrastructure** | - | Cross-cutting concerns (DB, Config, Exceptions) |
+
+---
+
+## Notation Legend
+
+| Symbol | Meaning |
+|--------|---------|
+| `-.->` | Dependency (dashed arrow) |
+| `«enumeration»` | Stereotype for enum types |
+| Package box | Logical grouping of related elements |
+| Nested package | Sub-package within parent package |
