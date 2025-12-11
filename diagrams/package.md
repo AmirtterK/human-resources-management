@@ -11,13 +11,13 @@ graph TB
     subgraph HRManagement["HRManagement"]
         direction TB
         
-        subgraph UI["UI"]
+        subgraph UILayer["UI"]
             Pages["Pages<br/>─────────<br/>LoginPage<br/>HomePage"]
             Views["Views<br/>─────────<br/>EmployeesView<br/>DepartmentsView<br/>BodiesView<br/>RetirementView<br/>RequestsView<br/>DomainsView<br/>GradesView"]
             Components["Components<br/>─────────<br/>SideBar<br/>EmployeesTable<br/>StatusChip<br/>Cards<br/>Dialogs"]
         end
         
-        subgraph Application["Application Services"]
+        subgraph AppLayer["Application Services"]
             AuthService["AuthService"]
             EmployeeService["EmployeeService"]
             DepartmentService["DepartmentService"]
@@ -28,18 +28,18 @@ graph TB
             PdfService["PdfService"]
         end
         
-        subgraph Domain["Domain Model"]
-            Employee["Employee"]
-            Department["Department"]
-            Body["Body"]
-            Domain["Domain"]
-            Grade["Grade"]
-            Speciality["Speciality"]
-            User["User"]
+        subgraph DomainLayer["Domain Model"]
+            EmployeeEntity["Employee"]
+            DepartmentEntity["Department"]
+            BodyEntity["Body"]
+            DomainEntity["Domain"]
+            GradeEntity["Grade"]
+            SpecialityEntity["Speciality"]
+            UserEntity["User"]
             Enums["«enumeration»<br/>Status<br/>Role<br/>Rank"]
         end
         
-        subgraph Persistence["Persistence"]
+        subgraph PersistenceLayer["Persistence"]
             EmployeeRepository["EmployeeRepository"]
             DepartmentRepository["DepartmentRepository"]
             BodyRepository["BodyRepository"]
@@ -49,7 +49,7 @@ graph TB
             UserRepository["UserRepository"]
         end
         
-        subgraph Infrastructure["Infrastructure"]
+        subgraph InfraLayer["Infrastructure"]
             DatabaseConfig["DatabaseConfig"]
             ExceptionHandler["ExceptionHandler"]
             APIConfig["APIConfig"]
@@ -57,13 +57,13 @@ graph TB
     end
     
     %% Dependencies (dashed arrows)
-    UI -.->|uses| Application
-    UI -.->|displays| Domain
-    Application -.->|manipulates| Domain
-    Application -.->|calls| Persistence
-    Persistence -.->|persists| Domain
-    Persistence -.->|uses| Infrastructure
-    Application -.->|uses| Infrastructure
+    UILayer -.->|uses| AppLayer
+    UILayer -.->|displays| DomainLayer
+    AppLayer -.->|manipulates| DomainLayer
+    AppLayer -.->|calls| PersistenceLayer
+    PersistenceLayer -.->|persists| DomainLayer
+    PersistenceLayer -.->|uses| InfraLayer
+    AppLayer -.->|uses| InfraLayer
 ```
 
 ---
@@ -72,23 +72,23 @@ graph TB
 
 ```mermaid
 graph TB
-    subgraph "Presentation Layer"
+    subgraph PresentationLayer["Presentation Layer"]
         UI_Pkg["UI<br/>─────────<br/>• Pages<br/>• Views<br/>• Components<br/>• Dialogs"]
     end
     
-    subgraph "Application Layer"
+    subgraph ApplicationLayer["Application Layer"]
         App_Pkg["Application Services<br/>─────────<br/>• AuthService<br/>• EmployeeService<br/>• DepartmentService<br/>• BodyService<br/>• GradeService<br/>• PdfService"]
     end
     
-    subgraph "Domain Layer"
+    subgraph DomainModelLayer["Domain Layer"]
         Domain_Pkg["Domain Model<br/>─────────<br/>• Employee<br/>• Department<br/>• Body<br/>• Domain<br/>• Grade<br/>• Speciality<br/>• User"]
     end
     
-    subgraph "Persistence Layer"
+    subgraph DataLayer["Persistence Layer"]
         Persistence_Pkg["Persistence<br/>─────────<br/>• EmployeeRepository<br/>• DepartmentRepository<br/>• BodyRepository<br/>• GradeRepository<br/>• UserRepository"]
     end
     
-    subgraph "Infrastructure Layer"
+    subgraph InfrastructureLayer["Infrastructure Layer"]
         Infra_Pkg["Infrastructure<br/>─────────<br/>• Database<br/>• ExceptionHandler<br/>• Configuration"]
     end
     
@@ -106,33 +106,33 @@ graph TB
 
 ```mermaid
 graph TB
-    subgraph Domain["Domain"]
-        subgraph Entities["Entities"]
-            Employee["Employee"]
-            Department["Department"]
-            Body["Body"]
-            DomainEntity["Domain"]
-            Grade["Grade"]
-            Speciality["Speciality"]
-            User["User"]
+    subgraph DomainPkg["Domain"]
+        subgraph EntitiesPkg["Entities"]
+            Emp["Employee"]
+            Dept["Department"]
+            Bdy["Body"]
+            Dom["Domain"]
+            Grd["Grade"]
+            Spec["Speciality"]
+            Usr["User"]
         end
         
-        subgraph ValueObjects["Value Objects / Enumerations"]
-            Status["«enumeration»<br/>Status<br/>─────────<br/>EMPLOYED<br/>TO_RETIRE<br/>RETIRED"]
-            Role["«enumeration»<br/>Role<br/>─────────<br/>PM<br/>AGENT<br/>ARCHIVER"]
-            Rank["«enumeration»<br/>Rank<br/>─────────<br/>PRINCIPAL<br/>NORMAL<br/>EXCEPTIONAL"]
+        subgraph ValueObjectsPkg["Value Objects / Enumerations"]
+            StatusEnum["«enumeration»<br/>Status<br/>─────────<br/>EMPLOYED<br/>TO_RETIRE<br/>RETIRED"]
+            RoleEnum["«enumeration»<br/>Role<br/>─────────<br/>PM<br/>AGENT<br/>ARCHIVER"]
+            RankEnum["«enumeration»<br/>Rank<br/>─────────<br/>PRINCIPAL<br/>NORMAL<br/>EXCEPTIONAL"]
         end
     end
     
-    Employee -.-> Status
-    Employee -.-> Rank
-    Employee -.-> Department
-    Employee -.-> Body
-    Employee -.-> Grade
-    User -.-> Role
-    Body -.-> DomainEntity
-    Grade -.-> Speciality
-    Speciality -.-> Body
+    Emp -.-> StatusEnum
+    Emp -.-> RankEnum
+    Emp -.-> Dept
+    Emp -.-> Bdy
+    Emp -.-> Grd
+    Usr -.-> RoleEnum
+    Bdy -.-> Dom
+    Grd -.-> Spec
+    Spec -.-> Bdy
 ```
 
 ---
@@ -141,24 +141,24 @@ graph TB
 
 ```mermaid
 graph TB
-    subgraph ApplicationServices["Application Services"]
-        subgraph Authentication["Authentication"]
+    subgraph AppServicesPkg["Application Services"]
+        subgraph AuthPkg["Authentication"]
             AuthSvc["AuthService<br/>─────────<br/>+ login()<br/>+ logout()<br/>+ resetPassword()"]
             UserAuthSvc["UserAuthService<br/>─────────<br/>+ validateCredentials()<br/>+ verifyDirectorCode()"]
         end
         
-        subgraph EmployeeManagement["Employee Management"]
+        subgraph EmpMgmtPkg["Employee Management"]
             EmpSvc["EmployeeService<br/>─────────<br/>+ getAllEmployees()<br/>+ addEmployee()<br/>+ modifyEmployee()<br/>+ deleteEmployee()"]
         end
         
-        subgraph OrganizationManagement["Organization Management"]
+        subgraph OrgMgmtPkg["Organization Management"]
             DeptSvc["DepartmentService<br/>─────────<br/>+ getDepartments()<br/>+ addDepartment()"]
             BodySvc["BodyService<br/>─────────<br/>+ getBodies()<br/>+ addBody()"]
-            DomainSvc["DomainService<br/>─────────<br/>+ getDomains()<br/>+ addDomain()"]
-            GradeSvc["GradeService<br/>─────────<br/>+ getGrades()<br/>+ addGrade()"]
+            DomSvc["DomainService<br/>─────────<br/>+ getDomains()<br/>+ addDomain()"]
+            GrdSvc["GradeService<br/>─────────<br/>+ getGrades()<br/>+ addGrade()"]
         end
         
-        subgraph Utilities["Utilities"]
+        subgraph UtilPkg["Utilities"]
             PdfSvc["PdfService<br/>─────────<br/>+ generatePDF()<br/>+ generateCertificate()"]
         end
     end
