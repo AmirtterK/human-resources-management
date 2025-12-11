@@ -2,7 +2,7 @@
 
 This document presents the package diagram for the complete HR Management System, showing both the **Flutter Frontend** and **Spring Boot Backend** architectures and their relationships.
 
----
+----
 
 ## System Overview
 
