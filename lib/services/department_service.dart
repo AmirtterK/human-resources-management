@@ -3,17 +3,19 @@ import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:hr_management/classes/Department.dart';
 
+import 'package:hr_management/config/api_config.dart';
+
 class DepartmentService {
-  static const String baseUrl = 'https://hr-server-3s0m.onrender.com/api';
-  static const Duration timeout = Duration(seconds: 60);
+  static const String baseUrl = '${ApiConfig.baseUrl}/departments'; // Modified baseUrl
+  static const Duration timeout = ApiConfig.timeout; // Modified timeout
 
   /// Fetch all departments from the API
   static Future<List<Department>> getDepartments() async {
     try {
-      print('Fetching departments from $baseUrl/departments');
+      print('Fetching departments from $baseUrl'); // Modified print statement
       
       final response = await http.get(
-        Uri.parse('$baseUrl/departments'),
+        Uri.parse(baseUrl),
         headers: {'Content-Type': 'application/json'},
       ).timeout(timeout);
 

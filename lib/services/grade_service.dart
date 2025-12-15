@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:hr_management/classes/Grade.dart';
+import 'package:hr_management/config/api_config.dart'; // Added import for ApiConfig
 
 class GradeService {
-  static const String baseUrl = 'https://hr-server-3s0m.onrender.com/api/asm';
-  static const Duration timeout = Duration(seconds: 60);
+  static const String baseUrl = '${ApiConfig.baseUrl}/asm';
+  static const Duration timeout = ApiConfig.timeout; // Corrected based on likely intent for syntactic correctness
 
   static Future<List<Grade>> getGradesByBody(String bodyId) async {
     final idNum = int.tryParse(bodyId);

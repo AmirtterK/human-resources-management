@@ -7,14 +7,14 @@ import 'package:intl/intl.dart';
 
 class EmployeesTable extends StatelessWidget {
   final List<Employee> employees;
-  final Function(Employee, BuildContext) onEmployeePressed;
+  final Function(Employee, BuildContext)? onEmployeePressed;
 
   final String title;
 
   const EmployeesTable({
     super.key,
     required this.employees,
-    required this.onEmployeePressed,
+    this.onEmployeePressed,
     required this.title,
   });
 
@@ -165,7 +165,7 @@ class EmployeesTable extends StatelessWidget {
                   ),
                 ),
 
-                if (!(title == "ExtendedBodiesTab"))
+                if (!(title == "ExtendedBodiesTab") && onEmployeePressed != null)
                   const DataColumn(
                     label: Expanded(child: Center(child: SizedBox(width: 48))),
                   ),
@@ -223,7 +223,7 @@ class EmployeesTable extends StatelessWidget {
                       DataCell(Center(child: Text(employee.gradeAr ?? '')))
                     else
                       DataCell(Center(child: Text(employee.department))),
-                    if (!(title == "ExtendedBodiesTab"))
+                    if (!(title == "ExtendedBodiesTab") && onEmployeePressed != null)
                       DataCell(
                         Align(
                           alignment: Alignment.centerRight,
@@ -242,7 +242,7 @@ class EmployeesTable extends StatelessWidget {
                                 ),
                               ),
                               onPressed: () => {
-                                onEmployeePressed(employee, buttonContext),
+                                onEmployeePressed!(employee, buttonContext),
                               },
                             ),
                           ),

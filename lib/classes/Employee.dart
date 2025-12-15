@@ -16,6 +16,7 @@ class Employee {
   final int? departmentId; // optional, parsed from nested department
   final int? specialityId; // optional, parsed from nested speciality
   final int? bodyId;
+  final int? gradeId; // Added gradeId
   final String? bodyEn;
   final String? bodyAr;
 
@@ -42,6 +43,7 @@ class Employee {
     this.departmentId,
     this.specialityId,
     this.bodyId,
+    this.gradeId,
     this.bodyEn,
     this.bodyAr,
     this.firstName,
@@ -160,6 +162,28 @@ class Employee {
           : json['retireRequest'].toString().toLowerCase() == 'true';
     }
 
+
+    // Safe parsing for gradeId
+    int? gradeId;
+    if (json['gradeId'] is int) {
+      gradeId = json['gradeId'];
+    } else if (json['grade'] is Map) {
+       final g = json['grade'];
+       if (g['id'] is int) {
+         gradeId = g['id'];
+       } else {
+         gradeId = int.tryParse(g['id']?.toString() ?? '');
+       }
+    }
+
+    // Safe parsing for step
+    int step = 0;
+    if (json['step'] is int) {
+      step = json['step'];
+    } else {
+      step = int.tryParse(json['step']?.toString() ?? '0') ?? 0;
+    }
+
     return Employee(
       id: json['id']?.toString() ?? json['_id']?.toString() ?? '',
       fullName: fullName,
@@ -168,7 +192,7 @@ class Employee {
       specialty: specialty,
       department: department,
       status: _parseStatus(json['status']),
-      step: json['step'] is int ? json['step'] : (int.tryParse(json['step']?.toString() ?? '0') ?? 0),
+      step: step,
       requestDate: requestDate,
       dateOfBirth: dateOfBirth,
       gradeEn: gradeEn,
@@ -176,13 +200,13 @@ class Employee {
       departmentId: departmentId,
       specialityId: specialityId,
       bodyId: bodyId,
-      bodyEn: bodyEn,
       bodyAr: bodyAr,
       firstName: firstName.isNotEmpty ? firstName : null,
       lastName: lastName.isNotEmpty ? lastName : null,
       address: address,
       reference: reference,
       retireRequest: retireRequest,
+      gradeId: gradeId,
     );
   }
 

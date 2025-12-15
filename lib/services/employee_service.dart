@@ -2,10 +2,11 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:hr_management/classes/Employee.dart';
+import 'package:hr_management/config/api_config.dart';
 
 class EmployeeService {
-  static const String baseUrl = 'https://hr-server-3s0m.onrender.com/api/pm';
-  static const Duration timeout = Duration(seconds: 60);
+  static const String baseUrl = '${ApiConfig.baseUrl}/pm';
+  static const Duration timeout = ApiConfig.timeout;
 
   /// Fetch all employees from the API
   static Future<List<Employee>> getEmployees() async {
@@ -18,12 +19,23 @@ class EmployeeService {
       ).timeout(timeout);
 
       print('GET employees status: ${response.statusCode}');
-      print('GET employees body length: ${response.body}');
+      print('GET employees body length: ${response.body.length}');
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonList = json.decode(response.body);
         print('Parsed ${jsonList.length} employees from API');
-        return jsonList.map((jsonItem) => Employee.fromJson(jsonItem)).toList();
+        return jsonList.map((jsonItem) {
+          try {
+            return Employee.fromJson(jsonItem);
+          } catch (e) {
+            print('Error parsing employee: $e');
+            print('Problematic JSON: $jsonItem');
+            // Return a "safe" placeholder or rethrow? 
+            // Better to rethrow to find the bug, but user needs app to work.
+            // Let's rethrow for now to see the error in logs if it persists.
+            rethrow; 
+          }
+        }).toList();
       } else {
         throw Exception('Failed to load employees: ${response.statusCode}');
       }
@@ -157,7 +169,72 @@ class EmployeeService {
     }
   }
 
-  static const String asmBaseUrl = 'https://hr-server-3s0m.onrender.com/api/asm';
+  /// Request retirement for an employee
+  /// Calls: POST /api/pm/employees/{id}/request-retire
+  static Future<Map<String, dynamic>> requestRetirement(String id, {String? justification}) async {
+    try {
+      print('Requesting retirement for employee $id');
+      final response = await http.post(
+        Uri.parse('$baseUrl/employees/$id/request-retire'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: justification != null ? json.encode(justification) : null,
+      ).timeout(timeout);
+
+      print('POST request-retire status: ${response.statusCode}');
+      print('POST request-retire body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (response.body.isEmpty) {
+          return {'success': true, 'message': 'Retirement requested successfully'};
+        }
+        try {
+          return json.decode(response.body);
+        } catch (_) {
+          return {'success': true, 'message': response.body};
+        }
+      } else {
+        throw Exception('Failed to request retirement: ${response.statusCode} ${response.body}');
+      }
+    } on TimeoutException {
+      throw Exception('Request timed out. Server may be starting up, please try again.');
+    } catch (e) {
+      print('Error in requestRetirement: $e');
+      rethrow;
+    }
+  }
+
+  static const String asmBaseUrl = '${ApiConfig.baseUrl}/asm';
+
+  /// Fetch all retired employees from ASM endpoint
+  static Future<List<Employee>> getRetiredEmployees() async {
+    try {
+      print('Fetching retired employees from $asmBaseUrl/employees');
+
+      final response = await http.get(
+        Uri.parse('$asmBaseUrl/employees'),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(timeout);
+
+      print('GET retired employees status: ${response.statusCode}');
+      print('GET retired employees body length: ${response.body.length}');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonList = json.decode(response.body);
+        print('Parsed ${jsonList.length} retired employees');
+        return jsonList.map((jsonItem) => Employee.fromJson(jsonItem)).toList();
+      } else {
+        throw Exception('Failed to load retired employees: ${response.statusCode}');
+      }
+    } on TimeoutException {
+      throw Exception('Request timed out. Server may be starting up, please try again.');
+    } catch (e) {
+      print('Error in getRetiredEmployees: $e');
+      throw Exception('Error fetching retired employees: $e');
+    }
+  }
 
   /// Fetch retirement requests from ASM API
   static Future<List<Employee>> getRetirementRequests() async {
@@ -252,6 +329,234 @@ class EmployeeService {
     } catch (e) {
       print('Error in modifyRetireeWithDirectorsCode: $e');
       rethrow;
+    }
+  }
+
+  /// Transfer an employee to a different department
+  /// Calls: PUT /api/pm/employees/{id}/transfer
+  static Future<Map<String, dynamic>> transferEmployee(
+    String id,
+    int departmentId,
+    DateTime effectiveDate,
+  ) async {
+    try {
+      print('Transferring employee $id to department $departmentId');
+      final response = await http.put(
+        Uri.parse('$baseUrl/employees/$id/transfer'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode({
+          'departmentId': departmentId,
+          'effectiveDate': effectiveDate.toIso8601String().substring(0, 10),
+        }),
+      ).timeout(timeout);
+
+      print('PUT transfer status: ${response.statusCode}');
+      print('PUT transfer body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        if (response.body.isEmpty) return {'success': true};
+        try {
+          return json.decode(response.body);
+        } catch (_) {
+          return {'success': true, 'message': response.body};
+        }
+      } else {
+        throw Exception('Failed to transfer employee: ${response.statusCode} ${response.body}');
+      }
+    } on TimeoutException {
+      throw Exception('Request timed out. Server may be starting up, please try again.');
+    } catch (e) {
+      print('Error in transferEmployee: $e');
+      rethrow;
+    }
+  }
+
+  /// Assign an employee to department, body, and grade
+  /// Calls: PUT /api/pm/employees/{id}/assign
+  static Future<Map<String, dynamic>> assignRecruit(
+    String id,
+    int departmentId,
+    int bodyId,
+    int gradeId,
+    DateTime startDate,
+  ) async {
+    try {
+      print('Assigning employee $id to dept=$departmentId, body=$bodyId, grade=$gradeId');
+      final response = await http.put(
+        Uri.parse('$baseUrl/employees/$id/assign'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode({
+          'departmentId': departmentId,
+          'bodyId': bodyId,
+          'gradeId': gradeId,
+          'startDate': startDate.toIso8601String().substring(0, 10),
+        }),
+      ).timeout(timeout);
+
+      print('PUT assign status: ${response.statusCode}');
+      print('PUT assign body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        if (response.body.isEmpty) return {'success': true};
+        try {
+          return json.decode(response.body);
+        } catch (_) {
+          return {'success': true, 'message': response.body};
+        }
+      } else {
+        throw Exception('Failed to assign employee: ${response.statusCode} ${response.body}');
+      }
+    } on TimeoutException {
+      throw Exception('Request timed out. Server may be starting up, please try again.');
+    } catch (e) {
+      print('Error in assignRecruit: $e');
+      rethrow;
+    }
+  }
+
+  /// Promote an employee (PM)
+  /// Calls: POST /api/pm/promotions
+  static Future<void> promoteEmployee({
+    required String employeeId,
+    required int gradeId,
+    required String rank, // e.g. "A1", "A2"
+    required int step,
+    required String justification,
+  }) async {
+    final eid = int.tryParse(employeeId);
+    if (eid == null) throw Exception('Invalid employee ID');
+    
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/promotions'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode({
+          'employeeId': eid,
+          'gradeId': gradeId,
+          'rank': rank,
+          'step': step,
+          'justification': justification,
+        }),
+      ).timeout(timeout);
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to promote employee: ${response.statusCode} ${response.body}');
+      }
+    } catch (e) {
+      print('Error promoting employee: $e');
+      rethrow;
+    }
+  }
+
+  /// Get employees approaching retirement (PM)
+  /// Calls: GET /api/pm/employees/toRetire
+  static Future<List<Employee>> getEmployeesToRetire() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/employees/toRetire'),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(timeout);
+
+      if (response.statusCode == 200) {
+         final List<dynamic> jsonList = json.decode(response.body);
+         return jsonList.map((e) => Employee.fromJson(e)).toList();
+      } else {
+        throw Exception('Failed to load employees to retire');
+      }
+    } catch (e) {
+      throw Exception('Error fetching employees to retire: $e');
+    }
+  }
+
+  /// Validate retirement request (ASM)
+  /// Calls: POST /api/asm/retireRequests/{id}/validate
+  static Future<Map<String, dynamic>> validateRetireRequest(String id) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$asmBaseUrl/retireRequests/$id/validate'),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(timeout);
+
+      if (response.statusCode == 200) {
+         return {'success': true, 'message': response.body};
+      } else {
+        throw Exception('Failed to validate retirement request: ${response.statusCode} ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error validating retirement request: $e');
+    }
+  }
+
+  /// Download work certificate (Agent)
+  /// Calls: GET /api/agent/employees/{id}/work-certificate
+  static Future<List<int>> downloadWorkCertificate(String id) async {
+    final url = 'https://hr-server-3s0m.onrender.com/api/agent/employees/$id/work-certificate';
+    try {
+      final response = await http.get(Uri.parse(url)).timeout(timeout);
+      if (response.statusCode == 200) {
+        return response.bodyBytes;
+      } else {
+        throw Exception('Failed to download certificate: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error downloading certificate: $e');
+    }
+  }
+
+  /// Download retirement certificate (ASM)
+  /// Calls: GET /api/asm/retirees/{id}/certificate
+  static Future<List<int>> downloadRetirementCertificate(String id) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$asmBaseUrl/retirees/$id/certificate')
+      ).timeout(timeout);
+      
+      if (response.statusCode == 200) {
+        return response.bodyBytes;
+      } else {
+         throw Exception('Failed to download retirement certificate');
+      }
+    } catch (e) {
+      throw Exception('Error downloading retirement certificate: $e');
+    }
+  }
+
+  /// Export employees list (Agent)
+  /// Calls: GET /api/agent/export
+  static Future<List<int>> exportEmployees({
+    int? specialtyId,
+    int? gradeId,
+    String? category,
+    String format = 'pdf',
+  }) async {
+    final queryParams = <String, String>{
+      'format': format,
+    };
+    if (specialtyId != null) queryParams['specialtyId'] = specialtyId.toString();
+    if (gradeId != null) queryParams['gradeId'] = gradeId.toString();
+    if (category != null && category.isNotEmpty) queryParams['category'] = category;
+
+    final uri = Uri.parse('${ApiConfig.baseUrl}/agent/export')
+        .replace(queryParameters: queryParams);
+
+    try {
+      final response = await http.get(uri).timeout(timeout);
+      if (response.statusCode == 200) {
+        return response.bodyBytes;
+      } else {
+        throw Exception('Failed to export employees: ${response.statusCode} ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error exporting employees: $e');
     }
   }
 }

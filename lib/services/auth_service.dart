@@ -2,13 +2,14 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:hr_management/classes/types.dart';
+import 'package:hr_management/config/api_config.dart';
 
 /// Authentication service for validating user credentials via backend API
 /// 
 /// This service communicates with the Spring Boot backend for authentication.
 class AuthService {
-  static const String baseUrl = 'https://hr-server-3s0m.onrender.com/api/auth';
-  static const Duration timeout = Duration(seconds: 60);
+  static const String baseUrl = '${ApiConfig.baseUrl}/auth';
+  static const Duration timeout = ApiConfig.timeout;
 
   // Map of usernames to display names (for UI purposes)
   static final Map<String, String> _displayNames = {
@@ -53,7 +54,8 @@ class AuthService {
 
       if (response.statusCode == 200) {
         // Backend returns the role as a string (e.g., "PERSONAL_MANAGER")
-        final roleString = response.body.trim();
+        // Remove quotes if present (standard JSON string response)
+        final roleString = response.body.trim().replaceAll('"', '');
         return _mapRoleToUser(roleString);
       } else {
         // Authentication failed

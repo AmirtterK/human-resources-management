@@ -43,28 +43,17 @@ class _RetirementTabState extends State<RetirementTab> {
     });
 
     try {
-      // Fetch all employees including non-active ones if the API supports it
-      // The user requested to fetch from /api/pm/employees which we know returns all (or usually active + others)
-      // and filter by status != ACTIVE
-      final allEmployees = await EmployeeService.getAllEmployeesTest();
-      print('Fetched ${allEmployees.length} employees: ${allEmployees.map((e) => "${e.fullName} (${e.status})").join(", ")}');
-      
-      // Filter employees where status is NOT ACTIVE
-      // Assuming 'ACTIVE' is mapped to Status.employed. 
-      // If the API returns string "ACTIVE", we might need to check how it's parsed.
-      // Based on Employee.dart, status is an enum. Let's assume employed == ACTIVE.
-      
-      final retiredOrToRetireEmployees = allEmployees.where((employee) {
-        return employee.status == Status.retired;
-      }).toList();
+      // Fetch retired employees from ASM endpoint (only RETIRED status)
+      final retiredEmployees = await EmployeeService.getRetiredEmployees();
+      print('Fetched ${retiredEmployees.length} retired employees from ASM');
 
       setState(() {
-        _allEmployees = retiredOrToRetireEmployees;
-        _filteredEmployees = retiredOrToRetireEmployees;
+        _allEmployees = retiredEmployees;
+        _filteredEmployees = retiredEmployees;
         _isLoading = false;
       });
       
-      print('Found ${retiredOrToRetireEmployees.length} retired/inactive employees');
+      print('Found ${retiredEmployees.length} retired employees');
     } catch (e) {
       setState(() {
         _errorMessage = e.toString();
@@ -72,7 +61,7 @@ class _RetirementTabState extends State<RetirementTab> {
         _allEmployees = [];
         _filteredEmployees = [];
       });
-      print('Error fetching employees for retirement: $e');
+      print('Error fetching retired employees: $e');
     }
   }
 
@@ -102,12 +91,47 @@ class _RetirementTabState extends State<RetirementTab> {
       return;
     }
 
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Export Options'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.picture_as_pdf, color: Colors.red),
+              title: const Text('Export as PDF'),
+              onTap: () {
+                Navigator.pop(context);
+                _performExport('pdf');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.table_chart, color: Colors.green),
+              title: const Text('Export as CSV'),
+              onTap: () {
+                Navigator.pop(context);
+                _performExport('csv');
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _performExport(String format) async {
     try {
-      await PdfService.generateEmployeeListPDF(_filteredEmployees, title: 'Retired Employees');
+      if (format == 'pdf') {
+        await PdfService.generateEmployeeListPDF(_filteredEmployees, title: 'Retired Employees');
+      } else {
+        await PdfService.generateEmployeeListCSV(_filteredEmployees, title: 'Retired Employees');
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('List exported successfully'),
+          SnackBar(
+            content: Text('Employee list exported as ${format.toUpperCase()}'),
             backgroundColor: Colors.green,
           ),
         );
@@ -116,7 +140,7 @@ class _RetirementTabState extends State<RetirementTab> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error exporting PDF: $e'),
+            content: Text('Error exporting ${format.toUpperCase()}: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -124,13 +148,15 @@ class _RetirementTabState extends State<RetirementTab> {
     }
   }
 
-  Future<void> _extractWorkCertificate(Employee employee) async {
+  Future<void> _downloadRetirementCertificate(Employee employee) async {
     try {
-      await PdfService.generateWorkCertificatePDF(employee);
+      final bytes = await EmployeeService.downloadRetirementCertificate(employee.id);
+      await PdfService.printPdfFromBytes(bytes);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Work certificate generated successfully'),
+            content: Text('Retirement certificate generated successfully'),
             backgroundColor: Colors.green,
           ),
         );
@@ -140,6 +166,33 @@ class _RetirementTabState extends State<RetirementTab> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error generating certificate: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _validateRetirement(Employee employee) async {
+    try {
+      final result = await EmployeeService.validateRetireRequest(employee.id);
+      
+      if (!mounted) return;
+      
+      if (result['success'] == true || result['message'] != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Retirement request validated successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _fetchEmployees(); // Refresh list to see status change
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error validating request: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -408,25 +461,50 @@ class _RetirementTabState extends State<RetirementTab> {
         color: Colors.white,
         child: Column(
           children: [
-            InkWell(
-              onTap: () {
-                Navigator.of(buttonContext).pop();
-                _extractWorkCertificate(employee);
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                alignment: Alignment.center,
-                child: const Text(
-                  "Extract Work Certificate",
-                  style: TextStyle(color: Color(0xff289581), fontSize: 13),
-                  textAlign: TextAlign.center,
+            if (employee.status == Status.retired) ...[
+              InkWell(
+                onTap: () {
+                  Navigator.of(buttonContext).pop();
+                  _downloadRetirementCertificate(employee);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  alignment: Alignment.center,
+                  child: const Text(
+                    "Retirement Certificate",
+                    style: TextStyle(color: Color(0xff289581), fontSize: 13),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ),
-            ),
-            const Divider(height: 1, thickness: 1),
+              const Divider(height: 1, thickness: 1),
+            ],
+
+            if (employee.retireRequest == true && employee.status != Status.retired) ...[
+              InkWell(
+                onTap: () {
+                  Navigator.of(buttonContext).pop();
+                  _validateRetirement(employee);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  alignment: Alignment.center,
+                  child: const Text(
+                    "Validate Request",
+                    style: TextStyle(color: Color(0xff289581), fontSize: 13, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+              const Divider(height: 1, thickness: 1),
+            ],
+
             InkWell(
               onTap: () {
                 Navigator.of(buttonContext).pop();

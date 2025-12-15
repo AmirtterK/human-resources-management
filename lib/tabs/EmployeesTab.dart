@@ -2,12 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:hr_management/classes/Employee.dart';
 import 'package:hr_management/classes/types.dart';
 import 'package:hr_management/components/AddEmployeeDialog.dart';
+import 'package:hr_management/components/AssignEmployeeDialog.dart';
 import 'package:hr_management/components/EmployeesTable.dart';
 import 'package:hr_management/components/ModifyEmployeeDialog.dart';
+import 'package:hr_management/components/TransferEmployeeDialog.dart';
+import 'package:hr_management/components/PromoteEmployeeDialog.dart';
+import 'dart:typed_data';
 import 'package:hr_management/data/data.dart';
+import 'package:hr_management/components/ManageDomainsDialog.dart';
 import 'package:hr_management/services/employee_service.dart';
 import 'package:hr_management/services/pdf_service.dart';
 import 'package:popover/popover.dart';
+import 'package:printing/printing.dart'; // Added for sharing CSV
 
 class EmployeesTab extends StatefulWidget {
   const EmployeesTab({super.key});
@@ -62,6 +68,34 @@ class _EmployeesTabState extends State<EmployeesTab> {
         // Do not fallback to local data
         _allEmployees = [];
         _filteredEmployees = [];
+      });
+    }
+  }
+
+  Future<void> _fetchEmployeesToRetire() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final fetchedEmployees = await EmployeeService.getEmployeesToRetire();
+      setState(() {
+        _allEmployees = fetchedEmployees;
+        _filteredEmployees = fetchedEmployees;
+        _isLoading = false;
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Showing ${fetchedEmployees.length} employees approaching retirement'),
+          backgroundColor: Colors.blue,
+        ),
+      );
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
       });
     }
   }
@@ -125,12 +159,54 @@ class _EmployeesTabState extends State<EmployeesTab> {
       return;
     }
 
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Export Options'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.picture_as_pdf, color: Colors.red),
+              title: const Text('Export as PDF'),
+              onTap: () {
+                Navigator.pop(context);
+                _performExport('pdf');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.table_chart, color: Colors.green),
+              title: const Text('Export as CSV'),
+              onTap: () {
+                Navigator.pop(context);
+                _performExport('csv');
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _performExport(String format) async {
     try {
-      await PdfService.generateEmployeeListPDF(_filteredEmployees, title: 'Employees');
+      final bytes = await EmployeeService.exportEmployees(
+        format: format,
+        // Pass current filters if needed, but backend export might need specific params
+        // For now, we export what the backend gives (likely all or filtered by params if we added them)
+      );
+
+      if (format == 'pdf') {
+        await PdfService.printPdfFromBytes(bytes);
+      } else {
+        // For CSV, try to share/save the file
+        await Printing.sharePdf(bytes: Uint8List.fromList(bytes), filename: 'employees.csv');
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Employee list exported successfully'),
+          SnackBar(
+            content: Text('Employee list exported as ${format.toUpperCase()}'),
             backgroundColor: Colors.green,
           ),
         );
@@ -139,7 +215,7 @@ class _EmployeesTabState extends State<EmployeesTab> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error exporting PDF: $e'),
+            content: Text('Error exporting ${format.toUpperCase()}: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -149,7 +225,10 @@ class _EmployeesTabState extends State<EmployeesTab> {
 
   Future<void> _extractWorkCertificate(Employee employee) async {
     try {
-      await PdfService.generateWorkCertificatePDF(employee);
+      // Use Backend Certificate Download
+      final bytes = await EmployeeService.downloadWorkCertificate(employee.id);
+      await PdfService.printPdfFromBytes(bytes);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -172,35 +251,10 @@ class _EmployeesTabState extends State<EmployeesTab> {
 
   Future<void> _requestRetirement(Employee employee) async {
     try {
-      final nameParts = employee.fullName.trim().split(RegExp(r'\\s+'));
-      final firstName = employee.firstName ?? (nameParts.isNotEmpty ? nameParts.first : '');
-      final lastName = employee.lastName ?? (nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '');
-
-      String? dateOfBirth;
-      if (employee.dateOfBirth != null) {
-        final dob = employee.dateOfBirth!;
-        dateOfBirth =
-            '${dob.year.toString().padLeft(4, '0')}-${dob.month.toString().padLeft(2, '0')}-${dob.day.toString().padLeft(2, '0')}';
-      }
-
-      final Map<String, dynamic> payload = {
-        'firstName': firstName,
-        'lastName': lastName,
-        'dateOfBirth': dateOfBirth,
-        'address': employee.address ?? '',
-        'originalRank': employee.rank,
-        'departmentId': employee.departmentId ?? 0,
-        'specialityId': employee.specialityId ?? 0,
-        'step': employee.step,
-        'reference': employee.reference ?? '',
-        'retireRequest': true,
-      };
-      payload.removeWhere((k, v) => v == null);
-
-      final result = await EmployeeService.modifyEmployee(employee.id, payload);
+      final result = await EmployeeService.requestRetirement(employee.id);
 
       if (!mounted) return;
-      if (result['success'] == true) {
+      if (result['success'] == true || result['message'] != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Retirement requested successfully'),
@@ -496,6 +550,35 @@ class _EmployeesTabState extends State<EmployeesTab> {
             ],
           ),
         ),
+
+        // Show To Retire button - ASM (Archiver) only
+        if (user == User.archiver) ...{
+          const SizedBox(width: 12),
+          TextButton.icon(
+            onPressed: _fetchEmployeesToRetire,
+            icon: const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+            label: const Text('To Retire', style: TextStyle(color: Colors.orange)),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
+          ),
+          
+          const SizedBox(width: 12),
+          OutlinedButton.icon(
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => const ManageDomainsDialog(),
+              );
+            },
+            icon: const Icon(Icons.domain, color: Color(0xff289581)),
+            label: const Text('Manage Domains', style: TextStyle(color: Color(0xff289581))),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Color(0xff289581)),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
+          ),
+        },
       ],
     );
   }
@@ -585,7 +668,8 @@ class _EmployeesTabState extends State<EmployeesTab> {
     setState(() {
       selectedEmployee = employee;
     });
-    double popHeight = user == User.agent ? 40 : 75;
+    // PM has 5 options: Modify, Promote, Transfer, Assign, To Retirement
+    double popHeight = user == User.agent ? 40 : (user == User.pm ? 200 : 75);
     showPopover(
       context: buttonContext,
       backgroundColor: Colors.white,
@@ -599,13 +683,15 @@ class _EmployeesTabState extends State<EmployeesTab> {
         child: Column(
           children: [
             if (user == User.pm) ...{
+              // Modify action
               InkWell(
                 onTap: () {
+                  Navigator.of(buttonContext).pop();
                   showDialog(
-                    context: context,
+                    context: this.context,
                     builder: (context) =>
                         ModifyEmployeeDialog(employee: employee),
-                  );
+                  ).then((_) => _fetchEmployees());
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(
@@ -620,6 +706,82 @@ class _EmployeesTabState extends State<EmployeesTab> {
                 ),
               ),
               const Divider(height: 1, thickness: 1),
+              // Promote action
+              InkWell(
+                onTap: () {
+                  Navigator.of(buttonContext).pop();
+                  showDialog(
+                    context: this.context,
+                    builder: (context) => PromoteEmployeeDialog(
+                      employee: employee,
+                      onPromoted: _fetchEmployees,
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  alignment: Alignment.center,
+                  child: const Text(
+                    "Promote",
+                    style: TextStyle(color: Color(0xff289581), fontSize: 14),
+                  ),
+                ),
+              ),
+              const Divider(height: 1, thickness: 1),
+              // Transfer action
+              InkWell(
+                onTap: () {
+                  Navigator.of(buttonContext).pop();
+                  showDialog(
+                    context: this.context,
+                    builder: (context) => TransferEmployeeDialog(
+                      employee: employee,
+                      onTransferred: _fetchEmployees,
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  alignment: Alignment.center,
+                  child: const Text(
+                    "Transfer",
+                    style: TextStyle(color: Color(0xff289581), fontSize: 14),
+                  ),
+                ),
+              ),
+              const Divider(height: 1, thickness: 1),
+              // Assign action
+              InkWell(
+                onTap: () {
+                  Navigator.of(buttonContext).pop();
+                  showDialog(
+                    context: this.context,
+                    builder: (context) => AssignEmployeeDialog(
+                      employee: employee,
+                      onAssigned: _fetchEmployees,
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  alignment: Alignment.center,
+                  child: const Text(
+                    "Assign",
+                    style: TextStyle(color: Color(0xff289581), fontSize: 14),
+                  ),
+                ),
+              ),
+              const Divider(height: 1, thickness: 1),
+              // To Retirement action
               Ink(
                 color: (employee.status == Status.employed && employee.retireRequest != true)
                     ? Colors.white

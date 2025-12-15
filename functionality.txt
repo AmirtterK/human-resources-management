@@ -1,0 +1,462 @@
+Use case 01: Add Employee
+ Objective: Allow the Personnel Manager to create a new employee record in
+the system.
+ Primary actor: Personnel Manager (PM)
+ Precondition: PM is authenticated and has ROLE_PM; required reference
+data (department, body, grade) exist.
+ Postcondition: New employee record saved and visible in the employee list.
+Scenario nominal — Add Employee
+1. PM opens the Add Employee form.
+1.1. The system displays the form with mandatory fields (first name, last name,
+national ID, department, body, grade, start date).
+2. PM fills the form and clicks Save.
+2.1. Client validates mandatory fields.
+3. Client sends POST /api/pm/employees/add with payload and Bearer token.
+4. Backend verifies authentication and role, validates payload.
+5. EmployeeService checks business rules (unique national ID).
+6. EmployeeRepository inserts the employee record.
+7. System returns 201 Created and displays success message.
+8. PM sees the new employee in the list.
+Scenarios alternatifs
+ A1 — Mandatory field empty: If a required field is empty, client shows ―field
+required‖ and prevents submission. PM fills field and resumes at step 2.
+ A2 — Duplicate national ID: If national ID already exists, backend returns 409
+Conflict with message ―employee exists‖. PM may cancel or correct ID.
+ A3 — Server error: If DB error occurs, backend returns 500. Client shows
+―operation failed‖ and logs error.
+
+
+
+
+Use case 02: Modify Employee
+ Objective: Allow the Personnel Manager to update existing employee details.
+ Primary actor: Personnel Manager (PM)
+ Precondition: PM authenticated; employee exists and is not archived.
+ Postcondition: Employee record updated with new values and audit logged.
+Scenario nominal — Modify Employee
+1. PM selects an employee from the list and clicks.
+1.1. System loads and displays the employee form populated with current data.
+2. PM changes fields and clicks Save.
+2.1. Client validates fields.
+3. Client sends PUT /api/pm/employees/{id}/modify with payload.
+4. Backend authenticates and validates payload; Service checks business rules.
+5. Service updates the entity via repository.
+6. System logs audit and returns 200 OK.
+7. PM sees confirmation and updated record.
+Scenarios alternatifs
+ A1 — Concurrent update conflict: If record changed concurrently, backend
+returns 409 Conflict; PM can refresh and reapply changes.
+ A2 — Invalid data: Backend returns 400 Bad Request; client displays
+validation errors.
+ A3 — Cancel edit: PM cancels -> system discards changes and returns to list.
+
+
+
+
+
+
+
+
+Use case 03: Request Retirement
+ Objective: Allow PM to create a retirement request for an employee (moves to
+retireRequests).
+ Primary actor: Personnel Manager (PM)
+ Precondition: PM authenticated; employee eligible or flagged for retirement.
+ Postcondition: Retirement request created and visible to Archive Manager.
+Scenario nominal — Request Retirement
+1. PM selects employee and clicks Request Retirement.
+2. System asks for retirement date and justification.
+3. PM submits form.
+4. Client sends POST /api/pm/employees/{id}/request-retire (or similar).
+5. Backend authenticates and stores retirement request.
+6. System returns 201 Created and notifies Archive Manager queue.
+Scenarios alternatifs
+ A1 — Missing date/justification: Client shows error; PM corrects.
+ A2 — Not eligible: Service returns 400 with message; PM cannot create
+request.
+ A3 — Cancel: PM cancels -> no request created.
+
+
+
+
+Use case 04: Transfer Between Departments
+ Objective: Transfer an employee from one department to another with history
+tracking.
+ Primary actor: Personnel Manager (PM)
+ Precondition: PM authenticated; employee exists; target department
+available.
+ Postcondition: Employee department updated; previous assignment stored in
+history.
+Scenario nominal — Transfer
+1. PM selects employee and clicks Transfer.
+2. System shows current assignment and list of departments.
+3. PM selects new department and effective date.
+4. PM confirms transfer.
+5. Client calls PUT /api/pm/employees/{id}/transfer.
+6. Backend validates, updates employee record, inserts history entry, returns 200
+OK.
+Scenarios alternatifs
+ A1 — Conflict with active tasks: System warns, PM may confirm with
+override or schedule transfer.
+ A2 — Invalid date: System rejects and asks for valid effective date.
+
+
+
+
+
+Use case 05: Assign New Recruit
+ Objective: Assign a newly recruited employee to a department/body and initial
+role.
+ Primary actor: Personnel Manager (PM)
+ Precondition: PM authenticated; recruit record exists or is being created.
+ Postcondition: Employee assigned to department/body and record updated.
+Scenario nominal — Assign New Recruit
+1. PM opens a recruit profile (new or existing).
+2. PM selects department, body, job position, and start date.
+3. PM clicks Assign.
+4. Client validates and sends PUT /api/pm/employees/{id}/assign.
+5. Backend updates employee assignment and logs action.
+6. System returns 200 OK and updates list.
+Scenarios alternatifs
+ A1 — Department invalid: System returns 400; PM selects valid department.
+ A2 — Employee already assigned: System shows current assignment and
+asks to confirm transfer instead.
+
+
+
+
+
+
+
+Use case 06: Promote Personnel
+ Objective: Submit and process a promotion request, optionally printing the
+personnel decision.
+ Primary actor: Personnel Manager (PM)
+ Precondition: PM authenticated; employee meets promotion eligibility rules or
+request is supported by justification.
+ Postcondition: Promotion recorded if validated; decision printable.
+Scenario nominal — Promote Personnel
+1. PM selects employee and opens Promotion dialog.
+2. PM enters requested new grade/step and justification, then submits.
+3. Client validates and sends POST /api/pm/promotions (or similar).
+4. Backend validates eligibility (seniority, grade rules).
+5. If valid, Service creates promotion request/changes status; system may require
+director validation (outside PM scope).
+6. On approval, Service updates employee grade and logs decision.
+7. PM can click Print personnel decision (included use case) — client requests
+PDF generation and prints.
+Scenarios alternatifs
+ A1 — Not eligible: Backend returns 400 with reason; PM may cancel or attach
+more documentation.
+ A2 — Requires Director authorization: Request created with status
+PENDING_DIRECTOR_APPROVAL.
+ A3 — Cancel before submit: PM cancels -> no change.
+
+
+
+
+Use case 01: Generate Work Certificate
+ Objective: Allow the Agent to instantly generate an employee’s work certificate
+in PDF format.
+ Primary Actor: Agent
+ Precondition: The Agent is authenticated; the selected employee exists in the
+database.
+ Postcondition: A PDF work certificate is generated and ready for download or
+printing.
+Scenario nominal — Generate Work Certificate
+1. The system displays all employee list.
+2. The Agent enters the employee’s name or ID if he has specific employee.
+3. The system shows matching results.
+4. The Agent selects an employee from the list.
+5. The Agent clicks Generate Certificate.
+6. The system builds the certificate template.
+7. The system generates the PDF document.
+8. The system displays a button to download or print the certificate.
+Scénarios alternatifs
+• A1 — No employee found: At step 2.1, if no matches, system shows ―No matching
+employee‖; Agent revises search (return to step 2).
+• A2 — Missing required data: At step 4.1, if fields missing (e.g., employment
+dates), system shows ―Insufficient data to generate certificate‖; Agent requests data
+correction from PM (stop or return to step 1 after fix).
+• A3 — Server error: If backend fails (PDF generation error or DB error), backend
+returns 500; client shows ―operation failed‖ and logs error.
+
+
+
+
+Use case 02: Extract a List of Names (Filtered Export)
+• Objective: Allow the Agent to extract and export a filtered list of employees
+(PDF/CSV) by specialty, grade, or category.
+• Primary actor: Agent
+• Precondition: Agent is authenticated; personnel data exist.
+• Postcondition: Filtered list displayed and export file (PDF/CSV) generated.
+Scenario nominal — Extract a List of Names
+1. Agent opens the List Extraction interface.
+1.1. The system displays filter controls (specialty, grade, category, employment
+status).
+2. Agent selects one or more filters and clicks Search.
+2.1. Client validates filter values.
+3. Client sends GET /api/agent/employees?filter=... with token.
+4. Backend applies filters and returns the filtered employee list.
+5. System displays the filtered list to the Agent.
+6. Agent clicks Export and chooses format (PDF or CSV).
+6.1. Client requests GET /api/agent/export?filter=... to backend.
+7. Backend generates export file and returns file bytes.
+8. Client prompts Agent to download the file.
+9. Agent downloads the export and confirms completion.
+Scenarios alternatifs
+• A1 — No results found: At step 4, if no employees match, system shows ―No
+results found‖; Agent modifies filters (return to step 2).
+• A2 — Invalid filter value: At step 2.1, client shows validation error (e.g., invalid
+date range); Agent corrects filters and retries.
+• A3 — Export generation error: At step 7, if export fails (timeout or server),
+backend returns 500; client shows ―export failed‖ and logs the attempt.
+
+
+
+
+
+Use case 03 : Manage Bodies (CRUD)
+• Objective: Allow the Agent to create, modify or delete bodies (corps). The Agent
+manages bodies only; grade CRUD is the responsibility of the Archive Manager.
+• Primary actor: Agent
+• Precondition: Agent is authenticated and authorized to manage bodies; required
+bilingual labels and body code fields are available.
+• Postcondition: Body is created, modified, or marked deleted/archived and visible
+in the bodies list.
+Scenario nominal — Add Body
+1. Agent opens Bodies Management.
+1.1. System displays existing bodies and a control to add a new body.
+2. Agent clicks Add Body.
+2.1. System displays Add Body form (French/Arabic name, code, optional
+description).
+3. Agent fills the form and clicks Save.
+3.1. Client validates required fields (both language labels present).
+4. Client sends POST /api/agent/bodies/create with payload and token.
+5. Backend verifies auth/role and saves the new body.
+6. System returns 201 Created and shows success message.
+7. Agent sees the new body in the list.
+Scenario nominal — Modify Body
+1. Agent selects a body and clicks Edit.
+1.1. System displays the form populated with current data.
+2. Agent updates fields and clicks Save.
+2.1. Client validates inputs.
+3. Client sends PUT /api/agent/bodies/{id}/modify with payload.
+4. Backend verifies auth and updates the body record.
+5. System returns 200 OK and UI refreshes with updated body.
+
+
+
+
+
+Scenario nominal — Delete Body
+1. Agent selects a body and clicks Delete.
+1.1. System requests confirmation.
+2. Agent confirms.
+3. Client sends DELETE /api/agent/bodies/{id}/delete with token.
+4. Backend checks referential constraints (no active employees assigned, or
+marks body as archived).
+5. If allowed, backend deletes/archives the body and returns 200 OK.
+6. System updates UI and shows success.
+Scenarios alternatifs
+• A1 — Missing bilingual labels: At step 3.1, if either language label is missing,
+client shows ―field required‖; Agent fills and resumes.
+• A2 — Duplicate body code/name: Backend returns 409 Conflict with ―body
+exists‖; Agent changes code/name or cancels.
+• A3 — Constraint on delete (body in use): At step 4 (delete), backend returns 409
+Conflict or 400 with message ―body assigned to employees‖; delete aborted; Agent
+may request reassignment of employees before retry.
+• A4 — Server error: Backend returns 500; client shows ―operation failed‖ and logs
+error.
+
+
+
+
+
+
+
+Use case 01: Manage Grades (CRUD)
+Objective: Allow the Archive Manager to create, modify and delete grades under a
+given body (corps).
+• Primary actor: Archive Manager (ASM)
+• Precondition: ASM is authenticated with ROLE_ASM; the body exists.
+• Postcondition: Grade is created, updated, or removed; changes visible to the
+system and usable by Agents and PMs.
+Scenario nominal — Create Grade
+1. ASM navigates to Body → Grades for a chosen body.
+1.1. System displays existing grades for that body.
+2. ASM clicks Add Grade.
+2.1. System shows the Add Grade form (grade code, bilingual name, level,
+description).
+3. ASM fills the form and clicks Save.
+3.1. Client validates mandatory fields.
+4. Client sends POST /api/asm/bodies/{bodyId}/grades/create with payload and
+token.
+5. Backend verifies auth/role and saves the new grade under the body.
+6. System returns 201 Created and shows success.
+7. ASM sees the new grade in the body’s grade list.
+Scenario nominal — Modify Grade
+1. ASM selects an existing grade and clicks Edit.
+1.1. System displays grade form populated with data.
+2. ASM modifies fields and clicks Save.
+2.1. Client validates inputs.
+3. Client sends POST /api/asm/bodies/{bodyId}/grades/{gradeId}/modify.
+4. Backend updates grade and returns 200 OK.
+5. ASM sees updated grade.
+40
+Scenario nominal — Delete Grade
+1. ASM selects grade and clicks Delete.
+1.1. System requests confirmation.
+2. ASM confirms.
+3. Client sends DELETE /api/asm/bodies/{bodyId}/grades/{gradeId}/delete.
+4. Backend checks constraints (no active references preventing deletion).
+5. If allowed, backend deletes or archives the grade and returns 200 OK.
+6. UI refreshes; ASM sees updated list.
+Scenarios alternatifs
+• A1 — Missing required field: client shows validation errors; ASM corrects.
+• A2 — Duplicate grade code: backend returns 409 Conflict; ASM changes code.
+• A3 — Constraint on delete (in use): backend returns 409 Conflict with message
+―grade in use‖; ASM must reassign employees or archive instead.
+• A4 — Server error: backend returns 500; client shows “operation failed” and logs error.
+
+
+
+
+
+
+
+Use case 02: Manage Domains & Specialties (CRUD)
+• Objective: Allow ASM to create, edit and remove Domains and associated
+Specialties (medical specialties).
+• Primary actor: Archive Manager (ASM)
+• Precondition: ASM authenticated; domain codes and specialty codes available.
+• Postcondition: Domains and specialties are updated and reflected in the system
+for PM/Agents to use.
+Scenario nominal — Create Domain / Specialty
+1. ASM opens Domains & Specialties management.
+1.1. System lists existing domains and specialties.
+2. ASM clicks Add Domain or chooses a domain and clicks Add Specialty.
+3. ASM fills required fields (code, bilingual labels, description) and clicks Save.
+4. Client validates input and calls POST /api/asm/domains/create or POST
+/api/asm/domains/{domainId}/specialities/create.
+5. Backend saves entity and returns 201 Created.
+6. ASM sees new domain/specialty.
+Scrnario nominal — Modify / Delete Domain or Specialty
+1. ASM selects domain/specialty and clicks Edit or Delete.
+2. For edit: modify fields -> PUT/POST to update endpoint -> backend returns
+200 OK.
+3. For delete: confirm -> DELETE /api/asm/domains/{domainId}/delete or
+DELETE /api/asm/specialities/{id}/delete -> backend checks constraints
+(specialty not used by employees) -> delete/archive or return 409 Conflict.
+4. UI refreshes.
+Scenarios alternatifs
+• A1 — Missing fields: client validation error.
+• A2 — Duplicate code: backend 409 Conflict.
+• A3 — Delete blocked because in use: backend 409 Conflict with explanation.
+• A4 — Server error: backend 500.
+
+
+
+
+
+
+Use case 03: Validate Retirement Request
+• Objective: Allow ASM to review and validate retirement requests submitted by the
+Personnel Manager; upon validation the employee record is archived and a
+retirement certificate can be generated.
+• Primary actor: Archive Manager (ASM)
+• Precondition: ASM authenticated; retirement request exists in the retireRequests
+queue.
+• Postcondition: Retirement request status set to VALIDATED (or REJECTED); if
+validated the employee is moved to archived state and archive record created.
+Scenario nominal — Validate Retirement Request
+1. ASM opens Retirement Requests list.
+1.1. System displays pending requests with details (employee, requested date,
+justification).
+2. ASM selects a request and views full employee file and verification checklist.
+3. ASM clicks Validate (or Reject) after manual verification.
+3.1. If Validate, system may request Director PIN for confirmation (depending
+on policy).
+4. If Director PIN required: ASM inputs Director PIN -> backend verifies PIN.
+5. Client sends POST /api/asm/retireRequests/{id}/validate with token and
+optional directorPin.
+6. Backend verifies auth, performs checks, marks request VALIDATED, archives
+employee record, generates retiree record and optionally a retirement
+certificate.
+7. System returns 200 OK and notifies PM and Agent about archive.
+8. ASM sees validated request removed from pending list.
+Scenarios alternatifs
+• A1 — Missing evidence / inconsistent data: ASM chooses Reject and records
+reason; system returns 200 OK with status REJECTED.
+• A2 — Director PIN invalid: If PIN is required but incorrect, backend returns 403
+Forbidden; ASM may retry or escalate.
+• A3 — Already archived / duplicate request: backend returns 409 Conflict; ASM
+views archive entry.
+• A4 — Server error: backend 500.
+
+
+
+
+
+Use case 04: Modify Archived Employee
+• Objective: Allow ASM to correct or update archived employee records (for example
+to fix missing fields or correct retirement date). This is a sensitive operation and
+requires Director PIN.
+• Primary actor: Archive Manager (ASM)
+• Precondition: ASM authenticated; employee is archived; Director PIN must be
+provided.
+• Postcondition: Archived employee record updated and audit trail preserved.
+Scenario nominal — Modify Archived Employee
+1. ASM opens Archived Employees list and selects a record.
+1.1. System displays archived employee data (read-only until edit mode).
+2. ASM clicks Edit and inputs Director PIN when prompted.
+2.1. Client sends PIN to backend for verification (do not store PIN).
+3. If PIN valid, client enables editable fields. ASM updates values and clicks
+Save.
+4. Client sends PUT /api/asm/employees/{id}/modify with payload and (optionally)
+directorPin verification token.
+5. Backend re-checks auth and PIN verification, applies updates to archive
+record, and appends an audit entry.
+6. System returns 200 OK and shows confirmation.
+Scenarios alternatifs
+• A1 — PIN invalid: Backend returns 403; edit disabled. ASM may retry with correct
+PIN or escalate.
+• A2 — Concurrent archive lock: If another admin is editing, backend returns 409
+Conflict; ASM waits or retries.
+• A3 — Forbidden field: Some fields may be immutable; backend returns 400 for
+attempted changes to immutable fields.
+• A4 — Server error: backend 500.
+
+
+
+
+
+
+Use case 05: Consult Retiree File & Generate Certificate
+• Objective: Allow ASM to consult archived employee files and generate retiree
+certificates or reports.
+• Primary actor: Archive Manager (ASM)
+• Precondition: ASM authenticated; archive contains retiree records.
+• Postcondition: ASM views/archive entries and can generate retiree certificates or
+export lists.
+Scenario nominal — Consult Retiree File
+1. ASM opens Archived Employees or Retirees module.
+1.1. System displays a searchable list of archived employees.
+2. ASM searches or filters retiree list.
+3. System returns filtered list.
+4. ASM selects a record and the system displays full retired file and document
+options (Generate certificate).
+5. ASM clicks Generate Retirement Certificate -> GET /api/asm/certificate/{id} -
+> backend generates PDF -> client offers download/print.
+Scenarios alternatifs
+• A1 — No archive results: system shows ―No records found‖ and suggests
+adjusting filters.
+• A2 — Export error: backend returns 500 -> client shows error.
+• A3 — Access restriction: if ASM role lacks permission for certain archive subsets,
+backend returns 403
+
+
+
+
+
+

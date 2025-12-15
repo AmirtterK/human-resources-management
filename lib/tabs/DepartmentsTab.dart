@@ -144,7 +144,7 @@ class _DepartmentsTabState extends State<DepartmentsTab> {
                         const SizedBox(width: 20),
                         Expanded(
                           child: Container(
-                            height: 45,
+                            height: 40, // Resized to 40
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(8),

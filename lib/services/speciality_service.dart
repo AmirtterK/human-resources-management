@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:hr_management/classes/Speciality.dart';
+import 'package:hr_management/classes/Domain.dart';
 
 class SpecialityService {
   static const String baseUrl = 'https://hr-server-3s0m.onrender.com/api';
@@ -25,6 +26,27 @@ class SpecialityService {
     } catch (e) {
       print('Error fetching specialities: $e');
       throw Exception('Error fetching specialities: $e');
+    }
+  }
+
+  static Future<List<Domain>> getDomains() async {
+    try {
+      final response = await http
+          .get(
+            Uri.parse('$asmBase/domains'),
+            headers: {'Content-Type': 'application/json'},
+          )
+          .timeout(timeout);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonList = json.decode(response.body);
+        return jsonList.map((json) => Domain.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load domains: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching domains: $e');
+      throw Exception('Error fetching domains: $e');
     }
   }
 
@@ -66,5 +88,48 @@ class SpecialityService {
         .timeout(timeout);
     if (res.statusCode == 200 || res.statusCode == 204) return;
     throw Exception('Failed to delete speciality: ${res.statusCode}');
+  }
+
+  static Future<Domain?> createDomain({required String name}) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$asmBase/domains/create'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: json.encode(name),
+          )
+          .timeout(timeout);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (response.body.isEmpty) return null;
+        return Domain.fromJson(json.decode(response.body));
+      } else {
+        throw Exception('Failed to create domain: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error creating domain: $e');
+    }
+  }
+
+  static Future<void> deleteDomain({required String domainId}) async {
+    final did = int.tryParse(domainId);
+    if (did == null) throw Exception('Invalid domain id');
+    try {
+      final response = await http
+          .delete(
+            Uri.parse('$asmBase/domains/$did/delete'),
+            headers: {'Accept': 'application/json'},
+          )
+          .timeout(timeout);
+
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw Exception('Failed to delete domain: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error deleting domain: $e');
+    }
   }
 }

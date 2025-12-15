@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:hr_management/services/employee_service.dart';
+import 'package:hr_management/services/department_service.dart';
+import 'package:hr_management/services/body_service.dart';
+import 'package:hr_management/services/grade_service.dart';
+import 'package:hr_management/classes/Department.dart';
+import 'package:hr_management/classes/Body.dart';
+import 'package:hr_management/classes/Grade.dart';
 
 class AddEmployeeDialog extends StatefulWidget {
   final VoidCallback? onEmployeeAdded;
@@ -24,15 +30,76 @@ class _AddEmployeeDialogState extends State<AddEmployeeDialog> {
   String? _selectedRank;
   int? _selectedSpecialityId;
   int? _selectedDepartmentId;
+  int? _selectedBodyId;
+  int? _selectedGradeId;
   
-  // Rank enum options from API
+  // Data Lists
+  List<Department> _departments = [];
+  List<Body> _bodies = [];
+  List<Grade> _grades = [];
+
+  // Rank enum options
   final List<String> _rankOptions = ['A1', 'A2', 'A3', 'A4', 'B1', 'B2', 'B3', 'C1', 'C2'];
   
-  // Speciality options - temporary, will be from API later
+  // Speciality options - temporary
   final List<int> _specialityOptions = [1, 2, 3];
-  
-  // Department options - temporary, will be from API later
-  final List<int> _departmentOptions = [1, 2, 3];
+
+  DateTime _startDate = DateTime.now();
+  final TextEditingController _startDateController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _startDateController.text = "${_startDate.year}-${_startDate.month.toString().padLeft(2, '0')}-${_startDate.day.toString().padLeft(2, '0')}";
+    _fetchInitialData();
+  }
+
+  Future<void> _fetchInitialData() async {
+    try {
+      final deps = await DepartmentService.getDepartments();
+      final bodies = await BodyService.getBodies();
+      if (mounted) {
+        setState(() {
+          _departments = deps;
+          _bodies = bodies;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading initial data: $e');
+    }
+  }
+
+  Future<void> _fetchGradesForBody(int bodyId) async {
+    setState(() {
+      _grades = [];
+      _selectedGradeId = null;
+    });
+    try {
+      final grades = await GradeService.getGradesByBody(bodyId.toString());
+      if (mounted) {
+        setState(() {
+          _grades = grades;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading grades: $e');
+    }
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _startDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != _startDate) {
+      setState(() {
+        _startDate = picked;
+        _startDateController.text = "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+      });
+    }
+  }
 
   bool _isLoading = false;
 
@@ -42,6 +109,7 @@ class _AddEmployeeDialogState extends State<AddEmployeeDialog> {
     _lastNameController.dispose();
     _addressController.dispose();
     _stepController.dispose();
+    _startDateController.dispose();
     _dayController.dispose();
     _monthController.dispose();
     _yearController.dispose();
@@ -55,10 +123,10 @@ class _AddEmployeeDialogState extends State<AddEmployeeDialog> {
       });
 
       try {
-        // Build date of birth in Java LocalDate format (YYYY-MM-DD)
+        // Build date of birth
         String dateOfBirth = '${_yearController.text}-${_monthController.text.padLeft(2, '0')}-${_dayController.text.padLeft(2, '0')}';
 
-        // Prepare employee data matching server EmployeeDTOPM format
+        // Prepare employee data
         final employeeData = {
           'firstName': _firstNameController.text.trim(),
           'lastName': _lastNameController.text.trim(),
@@ -66,26 +134,52 @@ class _AddEmployeeDialogState extends State<AddEmployeeDialog> {
           'address': _addressController.text.trim(),
           'originalRank': _selectedRank,
           'departmentId': _selectedDepartmentId ?? 0,
+          'bodyId': _selectedBodyId,
+          'gradeId': _selectedGradeId,
           'specialityId': _selectedSpecialityId ?? 0,
           'step': int.tryParse(_stepController.text.trim()) ?? 0,
           'reference': 'REF-${DateTime.now().millisecondsSinceEpoch}',
           'status': 'ACTIVE',
         };
 
-        // Send to API
-        await EmployeeService.addEmployee(employeeData);
+        // 1. Add Employee
+        final addResponse = await EmployeeService.addEmployee(employeeData);
+        
+        // 2. Assign Employee (if Body/Grade selected)
+        if (_selectedBodyId != null && _selectedGradeId != null && _selectedDepartmentId != null) {
+          // Identify ID from response (handle generic success message or full object)
+          String? newEmployeeId;
+          
+          // If response contains 'id' directly or inside 'param'/'body' 
+          // Usually Add returns the created object or id.
+          // Based on service code, it returns json.decode(response.body).
+          if (addResponse.containsKey('id')) {
+            newEmployeeId = addResponse['id'].toString();
+          }
+          
+          if (newEmployeeId != null) {
+             await EmployeeService.assignRecruit(
+              newEmployeeId,
+              _selectedDepartmentId!,
+              _selectedBodyId!,
+              _selectedGradeId!,
+              _startDate, // Use chosen start date
+            );
+          } else {
+            // If ID missing, maybe log or warn? But basic Add suceeded.
+            print('Warning: ID not returned from addEmployee, skipping assignment');
+          }
+        }
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Employee added successfully'),
+              content: Text('Employee added and assigned successfully'),
               backgroundColor: Colors.green,
             ),
           );
 
-          // Call the callback to refresh the employee list
           widget.onEmployeeAdded?.call();
-
           Navigator.of(context).pop(true);
         }
       } catch (e) {
@@ -321,10 +415,10 @@ class _AddEmployeeDialogState extends State<AddEmployeeDialog> {
                   DropdownButtonFormField<int>(
                     value: _selectedDepartmentId,
                     decoration: _inputDecoration('Select department'),
-                    items: _departmentOptions.map((id) {
+                    items: _departments.map((d) {
                       return DropdownMenuItem<int>(
-                        value: id,
-                        child: Text('Department $id', style: const TextStyle(fontSize: 13)),
+                        value: int.tryParse(d.id) ?? 0,
+                        child: Text(d.name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
                       );
                     }).toList(),
                     onChanged: (value) {
@@ -333,6 +427,58 @@ class _AddEmployeeDialogState extends State<AddEmployeeDialog> {
                       });
                     },
                     validator: (value) => value == null ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 12),
+
+                   // Body Dropdown
+                  const Text('Body (Corps)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: Colors.black87)),
+                  const SizedBox(height: 4),
+                  DropdownButtonFormField<int>(
+                    value: _selectedBodyId,
+                    decoration: _inputDecoration('Select body'),
+                    items: _bodies.map((b) {
+                      return DropdownMenuItem<int>(
+                        value: int.tryParse(b.id) ?? 0,
+                        child: Text(b.designationFR.isNotEmpty ? b.designationFR : b.nameEn, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedBodyId = value;
+                        _selectedGradeId = null;
+                      });
+                      if (value != null) _fetchGradesForBody(value);
+                    },
+                    validator: (value) => value == null ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Grade Dropdown
+                  const Text('Grade *', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: Colors.black87)),
+                  const SizedBox(height: 4),
+                  DropdownButtonFormField<int>(
+                    value: _selectedGradeId,
+                    decoration: _inputDecoration('Select grade'),
+                    items: _grades.map((g) {
+                      return DropdownMenuItem<int>(
+                        value: int.tryParse(g.id) ?? 0,
+                        child: Text(g.designationFR.isNotEmpty ? g.designationFR : g.code, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+                      );
+                    }).toList(),
+                    onChanged: _selectedBodyId == null ? null : (val) => setState(() => _selectedGradeId = val),
+                    validator: (value) => value == null ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Start Date Picker (for Assignment)
+                  const Text('Assignment Start Date', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: Colors.black87)),
+                  const SizedBox(height: 4),
+                  TextFormField(
+                    controller: _startDateController,
+                    readOnly: true,
+                    style: const TextStyle(fontSize: 13),
+                    decoration: _inputDecoration('Select start date').copyWith(suffixIcon: const Icon(Icons.calendar_today, size: 20)),
+                    onTap: () => _selectDate(context),
                   ),
                   const SizedBox(height: 24),
 

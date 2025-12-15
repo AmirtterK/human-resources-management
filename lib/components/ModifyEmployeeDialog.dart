@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:hr_management/classes/Employee.dart';
 import 'package:hr_management/classes/Department.dart';
+import 'package:hr_management/classes/Body.dart';
+import 'package:hr_management/classes/Grade.dart';
 import 'package:hr_management/services/employee_service.dart';
 import 'package:hr_management/services/department_service.dart';
+import 'package:hr_management/services/body_service.dart';
+import 'package:hr_management/services/grade_service.dart';
 
 class ModifyEmployeeDialog extends StatefulWidget {
   final Employee employee;
@@ -23,13 +27,18 @@ class _ModifyEmployeeDialogState extends State<ModifyEmployeeDialog> {
   final _yearController = TextEditingController();
   final _referenceController = TextEditingController();
 
+  // Dropdown selections
   int? _selectedDepartmentId;
-  List<Department> _departments = [];
-
+  int? _selectedBodyId;
+  int? _selectedGradeId;
   int? _selectedSpecialityId;
-  final List<int> _specialityOptions = [1, 2, 3];
-
   String? _selectedRank;
+
+  // Data lists
+  List<Department> _departments = [];
+  List<Body> _bodies = [];
+  List<Grade> _grades = [];
+  final List<int> _specialityOptions = [1, 2, 3];
   final List<String> _rankOptions = [
     'A1', 'A2', 'A3', 'A4',
     'B1', 'B2', 'B3',
@@ -38,16 +47,17 @@ class _ModifyEmployeeDialogState extends State<ModifyEmployeeDialog> {
 
   late int _currentStep;
   bool _isSubmitting = false;
+  bool _isLoadingGrades = false;
 
   @override
   void initState() {
     super.initState();
     _initializeFields();
-    _fetchDepartments();
+    _fetchInitialData();
   }
 
   void _initializeFields() {
-    // Use firstName and lastName from employee if available, otherwise parse from fullName
+    // Name
     if (widget.employee.firstName != null && widget.employee.firstName!.isNotEmpty) {
       _firstNameController.text = widget.employee.firstName!;
     } else {
@@ -62,22 +72,25 @@ class _ModifyEmployeeDialogState extends State<ModifyEmployeeDialog> {
       _lastNameController.text = parts.length > 1 ? parts.sublist(1).join(' ') : '';
     }
     
+    // Step, Reference, Address
     _currentStep = widget.employee.step;
     _referenceController.text = widget.employee.reference ?? '';
     _addressController.text = widget.employee.address ?? '';
 
-    // Rank default
+    // Rank
     if (_rankOptions.contains(widget.employee.rank)) {
       _selectedRank = widget.employee.rank;
     } else if (_rankOptions.isNotEmpty) {
       _selectedRank = _rankOptions.first;
     }
 
-    // Preselect department/speciality by IDs if available
+    // IDs
     _selectedDepartmentId = widget.employee.departmentId;
     _selectedSpecialityId = widget.employee.specialityId;
+    _selectedBodyId = widget.employee.bodyId;
+    _selectedGradeId = widget.employee.gradeId;
 
-    // Handle Date of Birth - use dateOfBirth if available, otherwise fallback to requestDate
+    // Date of Birth
     final dateToUse = widget.employee.dateOfBirth ?? widget.employee.requestDate;
     if (dateToUse != null) {
       _dayController.text = dateToUse.day.toString();
@@ -86,20 +99,8 @@ class _ModifyEmployeeDialogState extends State<ModifyEmployeeDialog> {
     }
   }
 
-  Future<void> _fetchDepartments() async {
-    try {
-      final deps = await DepartmentService.getDepartments();
-      setState(() {
-        _departments = deps;
-        _selectedDepartmentId ??= widget.employee.departmentId;
-        if (_selectedDepartmentId != null && !_departments.any((d) => int.tryParse(d.id) == _selectedDepartmentId)) {
-          _selectedDepartmentId = null;
-        }
-      });
-    } catch (e) {
-      // Keep UI functional even if departments fail to load
-      debugPrint('Failed to fetch departments: $e');
-    }
+  Future<void> _fetchInitialData() async {
+    // Structural data fetching removed as fields are removed from UI
   }
 
   @override
@@ -118,7 +119,7 @@ class _ModifyEmployeeDialogState extends State<ModifyEmployeeDialog> {
     if (_formKey.currentState!.validate()) {
       setState(() => _isSubmitting = true);
 
-      // Construct date string (YYYY-MM-DD)
+      // Date of Birth
       String dobString = '';
       if (_yearController.text.isNotEmpty && _monthController.text.isNotEmpty && _dayController.text.isNotEmpty) {
         String year = _yearController.text.padLeft(4, '0');
@@ -127,20 +128,27 @@ class _ModifyEmployeeDialogState extends State<ModifyEmployeeDialog> {
         dobString = '$year-$month-$day';
       }
 
-      final Map<String, dynamic> payload = <String, dynamic>{
+      final Map<String, dynamic> payload = {
         'firstName': _firstNameController.text.trim(),
         'lastName': _lastNameController.text.trim(),
-        'dateOfBirth': dobString.isNotEmpty ? dobString : null,
+        'dateOfBirth': dobString, // Validator ensures this is not empty
         'address': _addressController.text.trim(),
-        'originalRank': _selectedRank,
-        'step': _currentStep,
-        'departmentId': _selectedDepartmentId,
         'specialityId': _selectedSpecialityId,
         'reference': _referenceController.text.trim(),
       };
 
-      // Remove nulls to prevent sending fields with null values
-      payload.removeWhere((key, value) => value == null);
+      // Backend requires specialityId (Long). 
+      if (_selectedSpecialityId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+           const SnackBar(content: Text('Please select a speciality'), backgroundColor: Colors.red),
+        );
+        setState(() => _isSubmitting = false);
+        return;
+      }
+      
+      // Usually modify requires all fields. If null, we shouldn't send? 
+      // But endpoint expects a complete DTO.
+      // Assuming validation prevents nulls for required fields (Department, Speciality).
 
       try {
         await EmployeeService.modifyEmployee(widget.employee.id, payload);
@@ -161,33 +169,14 @@ class _ModifyEmployeeDialogState extends State<ModifyEmployeeDialog> {
   }
 
   void _promoteStep() {
-    setState(() {
-      _currentStep++;
-    });
-    // Optional: Visual feedback
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Step promoted to $_currentStep (Click Apply Changes to save)'),
-        duration: const Duration(seconds: 1),
-      ),
-    );
+    setState(() => _currentStep++);
   }
 
   void _promoteRank() {
     if (_selectedRank == null) return;
     final idx = _rankOptions.indexOf(_selectedRank!);
     if (idx >= 0 && idx < _rankOptions.length - 1) {
-      setState(() {
-        _selectedRank = _rankOptions[idx + 1];
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Rank promoted to $_selectedRank'), duration: const Duration(seconds: 1)),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Already at highest rank'), duration: Duration(seconds: 1)),
-      );
+      setState(() => _selectedRank = _rankOptions[idx + 1]);
     }
   }
 
@@ -200,9 +189,8 @@ class _ModifyEmployeeDialogState extends State<ModifyEmployeeDialog> {
         color: Colors.white,
         elevation: 2,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-          side: const BorderSide(color: Color(0x2609866F), width: 1),
-        ),
+            borderRadius: BorderRadius.circular(8),
+            side: const BorderSide(color: Color(0x2609866F), width: 1)),
         child: Container(
           constraints: const BoxConstraints(maxWidth: 500, maxHeight: 800),
           width: MediaQuery.of(context).size.width * 0.9,
@@ -214,276 +202,59 @@ class _ModifyEmployeeDialogState extends State<ModifyEmployeeDialog> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
+                   const Text(
                     'Modify Employee',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xff0A866F),
-                    ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xff0A866F)),
                   ),
                   const SizedBox(height: 24),
-
-                  // First & Last Name
+                  
+                  // Name Fields
                   Row(
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildLabel('First Name'),
-                            const SizedBox(height: 8),
-                            TextFormField(
-                              controller: _firstNameController,
-                              style: const TextStyle(fontSize: 13, color: Colors.black87),
-                              decoration: _buildInputDecoration('Enter first name'),
-                              validator: (value) => value == null || value.isEmpty ? 'Required' : null,
-                            ),
-                          ],
-                        ),
-                      ),
+                      Expanded(child: _buildTextField('First Name', _firstNameController)),
                       const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildLabel('Last Name'),
-                            const SizedBox(height: 8),
-                            TextFormField(
-                              controller: _lastNameController,
-                              style: const TextStyle(fontSize: 13, color: Colors.black87),
-                              decoration: _buildInputDecoration('Enter last name'),
-                              validator: (value) => value == null || value.isEmpty ? 'Required' : null,
-                            ),
-                          ],
-                        ),
-                      ),
+                      Expanded(child: _buildTextField('Last Name', _lastNameController)),
                     ],
                   ),
                   const SizedBox(height: 16),
 
-                  // Date of Birth
+                  // DOB
                   _buildLabel('Date of birth'),
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _dayController,
-                          keyboardType: TextInputType.number,
-                          style: const TextStyle(fontSize: 13, color: Colors.black87),
-                          decoration: _buildInputDecoration('DD'),
-                          validator: (value) {
-                             if (value == null || value.isEmpty) return 'Req';
-                             final n = int.tryParse(value);
-                             if (n == null || n < 1 || n > 31) return 'Inv';
-                             return null;
-                          },
-                        ),
-                      ),
+                      Expanded(child: _buildDateField(_dayController, 'DD', 1, 31)),
                       const SizedBox(width: 8),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _monthController,
-                          keyboardType: TextInputType.number,
-                          style: const TextStyle(fontSize: 13, color: Colors.black87),
-                          decoration: _buildInputDecoration('MM'),
-                          validator: (value) {
-                             if (value == null || value.isEmpty) return 'Req';
-                             final n = int.tryParse(value);
-                             if (n == null || n < 1 || n > 12) return 'Inv';
-                             return null;
-                          },
-                        ),
-                      ),
+                      Expanded(child: _buildDateField(_monthController, 'MM', 1, 12)),
                       const SizedBox(width: 8),
-                      Expanded(
-                        flex: 2,
-                        child: TextFormField(
-                          controller: _yearController,
-                          keyboardType: TextInputType.number,
-                          style: const TextStyle(fontSize: 13, color: Colors.black87),
-                          decoration: _buildInputDecoration('YYYY'),
-                           validator: (value) {
-                             if (value == null || value.isEmpty) return 'Required';
-                             final n = int.tryParse(value);
-                             if (n == null || n < 1900 || n > 2100) return 'Invalid';
-                             return null;
-                          },
-                        ),
-                      ),
+                      Expanded(flex: 2, child: _buildDateField(_yearController, 'YYYY', 1900, 2100)),
                     ],
                   ),
                   const SizedBox(height: 16),
 
-                  // Address
-                  _buildLabel('Address'),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _addressController,
-                    style: const TextStyle(fontSize: 13, color: Colors.black87),
-                    decoration: _buildInputDecoration('Enter the Address'),
-                  ),
+                  _buildTextField('Address', _addressController),
+                  const SizedBox(height: 16),
+                  _buildTextField('Reference', _referenceController),
                   const SizedBox(height: 16),
 
-                  // Reference
-                  _buildLabel('Reference'),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _referenceController,
-                    style: const TextStyle(fontSize: 13, color: Colors.black87),
-                    decoration: _buildInputDecoration('Enter the Reference'),
-                  ),
-                  const SizedBox(height: 16),
+                  // Structural fields (Rank, Step, Body, Grade, Department) removed from UI.
+                  // Only Personal Info and Speciality remain (if needed).
 
-                  // Current Rank + Promote
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF9F9F9),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Current Rank',
-                              style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _selectedRank ?? '-',
-                              style: const TextStyle(fontSize: 18, color: Colors.black87, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                        ElevatedButton.icon(
-                          onPressed: _promoteRank,
-                          icon: const Icon(Icons.arrow_upward, size: 16),
-                          label: const Text('Promote Rank'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xff289581),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Promote Step Section
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF9F9F9),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Current Step',
-                              style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '$_currentStep',
-                              style: const TextStyle(fontSize: 18, color: Colors.black87, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                        ElevatedButton.icon(
-                          onPressed: _promoteStep,
-                          icon: const Icon(Icons.arrow_upward, size: 16),
-                          label: const Text('Promote Step (+1)'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xff289581),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
 
                   // Speciality Dropdown
-                  _buildLabel('Speciality'),
-                  const SizedBox(height: 4),
-                  Text('Current: ${widget.employee.specialty.isNotEmpty ? widget.employee.specialty : '-'}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                  const SizedBox(height: 8),
                   DropdownButtonFormField<int>(
-                    value: _selectedSpecialityId,
-                    decoration: _buildInputDecoration('Select speciality'),
-                    items: _specialityOptions.map((id) {
-                      return DropdownMenuItem<int>(
-                        value: id,
-                        child: Text('Speciality $id', style: const TextStyle(fontSize: 13)),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedSpecialityId = value;
-                      });
-                    },
+                    value: _specialityOptions.contains(_selectedSpecialityId) ? _selectedSpecialityId : null,
+                    decoration: _buildInputDecoration('Select Speciality'),
+                    items: _specialityOptions.map((id) => DropdownMenuItem(
+                      value: id,
+                      child: Text('Speciality $id'),
+                    )).toList(),
+                    onChanged: (val) => setState(() => _selectedSpecialityId = val),
                   ),
-
-                  const SizedBox(height: 16),
-
-                  // Department Dropdown
-                  _buildLabel('Department'),
-                  const SizedBox(height: 4),
-                  Text('Current: ${widget.employee.department.isNotEmpty ? widget.employee.department : '-'}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<int>(
-                    value: _selectedDepartmentId,
-                    decoration: _buildInputDecoration('Select department'),
-                    items: _departments.isNotEmpty
-                        ? _departments
-                            .map((dep) {
-                              final depId = int.tryParse(dep.id);
-                              if (depId == null) return null;
-                              return DropdownMenuItem<int>(
-                                value: depId,
-                                child: Text(dep.name, style: const TextStyle(fontSize: 13)),
-                              );
-                            })
-                            .where((item) => item != null)
-                            .cast<DropdownMenuItem<int>>()
-                            .toList()
-                        : <DropdownMenuItem<int>>[
-                            if (_selectedDepartmentId != null)
-                              DropdownMenuItem<int>(
-                                value: _selectedDepartmentId!,
-                                child: Text('Department ${_selectedDepartmentId}', style: const TextStyle(fontSize: 13)),
-                              ),
-                          ],
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedDepartmentId = value;
-                      });
-                    },
-                  ),
-
                   const SizedBox(height: 24),
 
-                  // Action Buttons
+                  // Buttons
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -494,23 +265,21 @@ class _ModifyEmployeeDialogState extends State<ModifyEmployeeDialog> {
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 14),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                          elevation: 0,
                         ),
-                        child: _isSubmitting
-                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
-                            : const Text('Apply Changes', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                        child: _isSubmitting 
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : const Text('Apply Changes'),
                       ),
                       const SizedBox(width: 16),
                       ElevatedButton(
-                        onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
+                        onPressed: () => Navigator.of(context).pop(),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xffEF5350),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 14),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                          elevation: 0,
                         ),
-                        child: const Text('Cancel', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                        child: const Text('Cancel'),
                       ),
                     ],
                   ),
@@ -523,15 +292,83 @@ class _ModifyEmployeeDialogState extends State<ModifyEmployeeDialog> {
     );
   }
 
-  Widget _buildLabel(String label) {
-    return Text(
-      label,
-      style: const TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: Colors.black87,
+  Widget _buildTextField(String label, TextEditingController controller) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel(label),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          style: const TextStyle(fontSize: 13, color: Colors.black87),
+          decoration: _buildInputDecoration('Enter $label'),
+          validator: (val) => val == null || val.isEmpty ? 'Required' : null,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDateField(TextEditingController controller, String hint, int min, int max) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      style: const TextStyle(fontSize: 13, color: Colors.black87),
+      decoration: _buildInputDecoration(hint),
+      validator: (value) {
+        if (value == null || value.isEmpty) return 'Req';
+        final n = int.tryParse(value);
+        if (n == null || n < min || n > max) return 'Inv';
+        return null;
+      },
+    );
+  }
+
+  Widget _buildRankCard() {
+    return _buildInfoCard('Current Rank', _selectedRank ?? '-', () => _promoteRank(), 'Promote');
+  }
+
+  Widget _buildStepCard() {
+    return _buildInfoCard('Current Step', '$_currentStep', () => _promoteStep(), '+1');
+  }
+
+  Widget _buildInfoCard(String title, String value, VoidCallback onPromote, String btnLabel) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9F9F9),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              SizedBox(
+                height: 24,
+                child: ElevatedButton(
+                  onPressed: onPromote,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xff289581),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    textStyle: const TextStyle(fontSize: 10),
+                  ),
+                  child: Text(btnLabel, style: const TextStyle(color: Colors.white)),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
+  }
+
+  Widget _buildLabel(String label) {
+    return Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87));
   }
 
   InputDecoration _buildInputDecoration(String hint) {
@@ -540,10 +377,7 @@ class _ModifyEmployeeDialogState extends State<ModifyEmployeeDialog> {
       hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
       filled: true,
       fillColor: const Color(0xFFF5F5F5),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide.none,
-      ),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       isDense: true,
     );

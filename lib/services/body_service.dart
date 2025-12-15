@@ -1,16 +1,17 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:hr_management/classes/Body.dart';
+import 'package:hr_management/config/api_config.dart';
 
 class BodyService {
-  static const String baseUrl = 'https://hr-server-3s0m.onrender.com/api';
-  static const Duration timeout = Duration(seconds: 60);
+  static const String baseUrl = '${ApiConfig.baseUrl}/bodies';
+  static const Duration timeout = ApiConfig.timeout;
 
   static Future<List<Body>> getBodies() async {
     try {
       final response = await http
           .get(
-            Uri.parse('$baseUrl/bodies'),
+            Uri.parse(baseUrl),
             headers: {'Content-Type': 'application/json'},
           )
           .timeout(timeout);

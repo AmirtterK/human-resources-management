@@ -86,12 +86,47 @@ class _RequestsTabState extends State<RequestsTab> {
       return;
     }
 
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Export Options'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.picture_as_pdf, color: Colors.red),
+              title: const Text('Export as PDF'),
+              onTap: () {
+                Navigator.pop(context);
+                _performExport('pdf');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.table_chart, color: Colors.green),
+              title: const Text('Export as CSV'),
+              onTap: () {
+                Navigator.pop(context);
+                _performExport('csv');
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _performExport(String format) async {
     try {
-      await PdfService.generateEmployeeListPDF(_filteredRequests, title: 'Retirees');
+      if (format == 'pdf') {
+        await PdfService.generateEmployeeListPDF(_filteredRequests, title: 'Retirement Requests');
+      } else {
+        await PdfService.generateEmployeeListCSV(_filteredRequests, title: 'Retirement Requests');
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Employee list exported successfully'),
+          SnackBar(
+            content: Text('Employee list exported as ${format.toUpperCase()}'),
             backgroundColor: Colors.green,
           ),
         );
@@ -100,7 +135,7 @@ class _RequestsTabState extends State<RequestsTab> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error exporting PDF: $e'),
+            content: Text('Error exporting ${format.toUpperCase()}: $e'),
             backgroundColor: Colors.red,
           ),
         );

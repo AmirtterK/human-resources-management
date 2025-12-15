@@ -1,8 +1,11 @@
 import 'package:pdf/pdf.dart';
+import 'dart:typed_data';
+import 'dart:convert'; // Added import
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:hr_management/classes/Employee.dart';
+import 'package:hr_management/classes/Body.dart';
 import 'package:intl/intl.dart';
 
 class PdfService {
@@ -267,6 +270,146 @@ class PdfService {
         ),
       ],
     );
+  }
+
+  /// Print/Share PDF from bytes (downloaded from server)
+  static Future<void> printPdfFromBytes(List<int> bytes) async {
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => Uint8List.fromList(bytes),
+    );
+  }
+
+
+
+  static String _escapeCsv(String val) {
+    if (val.contains(',') || val.contains('"') || val.contains('\n')) {
+      return '"${val.replaceAll('"', '""')}"';
+    }
+    return val;
+  }
+
+  /// Generate and share CSV for a list of employees (Local Export)
+  static Future<void> generateEmployeeListCSV(List<Employee> employees, {String title = 'Employee List'}) async {
+    final buffer = StringBuffer();
+    // Header
+    buffer.writeln('ID,Full Name,Rank,Department,Speciality,Status');
+
+    // Rows
+    for (final e in employees) {
+      buffer.write('${_escapeCsv(e.id)},');
+      buffer.write('${_escapeCsv(e.fullName)},');
+      buffer.write('${_escapeCsv(e.rank)},');
+      buffer.write('${_escapeCsv(e.department)},');
+      buffer.write('${_escapeCsv(e.specialty)},');
+      buffer.write('${_escapeCsv(e.status.name)}');
+      buffer.writeln();
+    }
+
+    final bytes = const Utf8Encoder().convert(buffer.toString());
+    await Printing.sharePdf(bytes: bytes, filename: '${title.replaceAll(" ", "_")}.csv');
+  }
+
+  /// Generate and save/print Body list PDF
+  static Future<void> generateBodyListPDF(List<Body> bodies, {String title = 'Bodies List'}) async {
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(40),
+        build: (pw.Context context) {
+          return [
+            // Header
+            pw.Header(
+              level: 0,
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text(
+                    title,
+                    style: pw.TextStyle(
+                      fontSize: 24,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.teal,
+                    ),
+                  ),
+                  pw.Text(
+                    'Generated: ${DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now())}',
+                    style: const pw.TextStyle(fontSize: 10),
+                  ),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 20),
+            
+            // Summary
+            pw.Container(
+              padding: const pw.EdgeInsets.all(10),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.grey200,
+                borderRadius: pw.BorderRadius.circular(5),
+              ),
+              child: pw.Text(
+                'Total Bodies: ${bodies.length}',
+                style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+              ),
+            ),
+            pw.SizedBox(height: 20),
+
+            // Table
+            pw.Table(
+              border: pw.TableBorder.all(color: PdfColors.grey),
+              columnWidths: {
+                0: const pw.FlexColumnWidth(1),
+                1: const pw.FlexColumnWidth(2),
+                2: const pw.FlexColumnWidth(2),
+              },
+              children: [
+                // Header row
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfColors.grey300),
+                  children: [
+                    _buildTableCell('Code', isHeader: true),
+                    _buildTableCell('Designation (FR)', isHeader: true),
+                    _buildTableCell('Designation (AR)', isHeader: true),
+                  ],
+                ),
+                // Data rows
+                ...bodies.map((body) => pw.TableRow(
+                  children: [
+                    _buildTableCell(body.code),
+                    _buildTableCell(body.designationFR),
+                    _buildTableCell(body.designationAR),
+                  ],
+                )),
+              ],
+            ),
+          ];
+        },
+      ),
+    );
+
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+    );
+  }
+
+  /// Generate and share CSV for a list of bodies (Local Export)
+  static Future<void> generateBodyListCSV(List<Body> bodies, {String title = 'Bodies List'}) async {
+    final buffer = StringBuffer();
+    // Header
+    buffer.writeln('Code,Designation FR,Designation AR');
+
+    // Rows
+    for (final b in bodies) {
+      buffer.write('${_escapeCsv(b.code)},');
+      buffer.write('${_escapeCsv(b.designationFR)},');
+      buffer.write('${_escapeCsv(b.designationAR)}');
+      buffer.writeln();
+    }
+
+    final bytes = const Utf8Encoder().convert(buffer.toString());
+    await Printing.sharePdf(bytes: bytes, filename: '${title.replaceAll(" ", "_")}.csv');
   }
 }
 

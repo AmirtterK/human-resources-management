@@ -69,13 +69,49 @@ class _ExtendedDepartmentsTabState extends State<ExtendedDepartmentsTab> {
       return;
     }
 
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Export Options'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.picture_as_pdf, color: Colors.red),
+              title: const Text('Export as PDF'),
+              onTap: () {
+                Navigator.pop(context);
+                _performExport('pdf');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.table_chart, color: Colors.green),
+              title: const Text('Export as CSV'),
+              onTap: () {
+                Navigator.pop(context);
+                _performExport('csv');
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _performExport(String format) async {
     try {
       final departmentName = widget.department?.name ?? 'Department';
-      await PdfService.generateEmployeeListPDF(_filteredEmployees, title: departmentName);
+      
+      if (format == 'pdf') {
+        await PdfService.generateEmployeeListPDF(_filteredEmployees, title: departmentName);
+      } else {
+        await PdfService.generateEmployeeListCSV(_filteredEmployees, title: departmentName);
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Employee list exported successfully'),
+          SnackBar(
+            content: Text('Employee list exported as ${format.toUpperCase()}'),
             backgroundColor: Colors.green,
           ),
         );
@@ -84,7 +120,7 @@ class _ExtendedDepartmentsTabState extends State<ExtendedDepartmentsTab> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error exporting PDF: $e'),
+            content: Text('Error exporting ${format.toUpperCase()}: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -177,7 +213,7 @@ class _ExtendedDepartmentsTabState extends State<ExtendedDepartmentsTab> {
         const SizedBox(width: 20),
         Expanded(
           child: Container(
-            height: 45,
+            height: 40, // Resized to 40
             padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
             child: TextField(
@@ -205,47 +241,7 @@ class _ExtendedDepartmentsTabState extends State<ExtendedDepartmentsTab> {
           child: const Text('Extract List'),
         ),
         // Add Employee button - only for PM users
-        if (user == User.pm) ...{
-
-          const SizedBox(width: 12),
-          OutlinedButton(
-            onPressed: () {
-              final depId = int.tryParse(widget.department?.id ?? '');
-              if (depId == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Invalid department id')),
-                );
-                return;
-              }
-              showDialog(
-                context: context,
-                builder: (context) => AddEmployeeToDepartmentDialog(
-                  departmentId: depId,
-                  onAssigned: _refreshDepartmentEmployees,
-                ),
-              );
-            },
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Color(0xff289581),
-              side: const BorderSide(color: Color(0xff289581)),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
-              ),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Add to Department',
-                  style: TextStyle(fontWeight: FontWeight.w500),
-                ),
-                SizedBox(width: 4),
-                Icon(Icons.group_add),
-              ],
-            ),
-          ),
-        },
+        // Add Employee button removed as requested
         if (user == User.agent) ...{
           const SizedBox(width: 12),
           ElevatedButton(
@@ -339,7 +335,7 @@ class _ExtendedDepartmentsTabState extends State<ExtendedDepartmentsTab> {
         child: EmployeesTable(
           title: 'ExtendedDepartementsTab',
           employees: _filteredEmployees,
-          onEmployeePressed: _showEmployeeActions,
+          onEmployeePressed: null,
         ),
       ),
     );

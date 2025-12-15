@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hr_management/classes/Body.dart';
 import 'package:hr_management/classes/Employee.dart';
+import 'package:hr_management/services/pdf_service.dart'; // Added import
 import 'package:hr_management/components/AddBodieDialog.dart';
 import 'package:hr_management/components/BodieCard.dart';
 import 'package:hr_management/data/data.dart';
@@ -212,7 +213,7 @@ class _BodiesTabState extends State<BodiesTab> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Container(
-                            height: 45,
+                            height: 40, // Resized to 40
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(8),
@@ -229,6 +230,24 @@ class _BodiesTabState extends State<BodiesTab> {
                           ),
                         ),
                         const SizedBox(width: 20),
+                        // Extract List Button
+                        OutlinedButton.icon(
+                          onPressed: _extractBodyList,
+                          icon: const Icon(Icons.download, size: 18),
+                          label: const Text('Extract List'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xff289581),
+                            side: const BorderSide(color: Color(0xff289581)),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
                         OutlinedButton.icon(
                           onPressed: _addBody,
                           icon: const Icon(Icons.add, size: 18),
@@ -323,6 +342,50 @@ class _BodiesTabState extends State<BodiesTab> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Failed to delete body: $e')));
+    }
+  }
+
+  void _extractBodyList() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Export Options'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.picture_as_pdf, color: Colors.red),
+              title: const Text('Export as PDF'),
+              onTap: () {
+                Navigator.pop(context);
+                _performExport('pdf');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.table_chart, color: Colors.green),
+              title: const Text('Export as CSV'),
+              onTap: () {
+                Navigator.pop(context);
+                _performExport('csv');
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _performExport(String format) async {
+    try {
+      if (format == 'pdf') {
+        await PdfService.generateBodyListPDF(_filteredBodies);
+      } else {
+        await PdfService.generateBodyListCSV(_filteredBodies);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to extract list: $e')),
+      );
     }
   }
 }
