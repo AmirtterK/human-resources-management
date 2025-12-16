@@ -8,6 +8,7 @@ import 'package:hr_management/services/employee_service.dart';
 import 'package:hr_management/services/pdf_service.dart';
 import 'package:popover/popover.dart';
 
+/// Tab for displaying employees who have been retired.
 class RetirementTab extends StatefulWidget {
   const RetirementTab({super.key});
 

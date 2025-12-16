@@ -10,6 +10,7 @@ import 'package:hr_management/services/pdf_service.dart';
 import 'package:hr_management/services/employee_service.dart';
 import 'package:popover/popover.dart';
 
+/// Detailed view of a specific Department, showing its employees.
 class ExtendedDepartmentsTab extends StatefulWidget {
   const ExtendedDepartmentsTab({
     super.key,

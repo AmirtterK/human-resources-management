@@ -8,6 +8,8 @@ import 'package:hr_management/services/department_service.dart';
 import 'package:hr_management/services/body_service.dart';
 import 'package:hr_management/services/grade_service.dart';
 
+/// Dialog for modifying an existing employee's details.
+/// Allows updating personal info, rank, step, and assignment.
 class ModifyEmployeeDialog extends StatefulWidget {
   final Employee employee;
 

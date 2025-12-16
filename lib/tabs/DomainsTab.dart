@@ -5,6 +5,7 @@ import 'package:hr_management/components/DomainDetails.dart';
 import 'package:hr_management/classes/Domain.dart';
 import 'package:hr_management/services/domain_service.dart';
 
+/// Tab for displaying and managing functionality domains.
 class DomainsTab extends StatefulWidget {
   const DomainsTab({super.key});
 
@@ -87,7 +88,12 @@ class _DomainsTabState extends State<DomainsTab> {
   @override
   Widget build(BuildContext context) {
     if (_isModifying) {
-      return DomainDetails(domainId: _selectedDomain!.id, domainName: _selectedDomain!.name, onReturn: _returnToList);
+      return DomainDetails(
+        domainId: _selectedDomain!.id,
+        domainName: _selectedDomain!.name,
+        onReturn: _returnToList,
+        initialSpecialities: _selectedDomain!.specialities,
+      );
     }
 
     return Column(

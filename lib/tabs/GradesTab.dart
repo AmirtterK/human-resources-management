@@ -6,6 +6,7 @@ import 'package:hr_management/services/body_service.dart';
 import 'package:hr_management/services/employee_service.dart';
 import 'package:hr_management/tabs/ExtendedGradesTab.dart';
 
+/// Tab for viewing bodies to select and manage their grades.
 class GradesTab extends StatefulWidget {
   const GradesTab({super.key});
 

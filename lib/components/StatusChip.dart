@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hr_management/classes/types.dart';
 
+/// Visual chip to display an employee's status (Employed, Retired, etc.).
 class StatusChip extends StatelessWidget {
   final Status status;
   final bool? retireRequest;

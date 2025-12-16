@@ -3,10 +3,12 @@ import 'package:http/http.dart' as http;
 import 'package:hr_management/classes/Body.dart';
 import 'package:hr_management/config/api_config.dart';
 
+/// Service for managing organizational bodies via backend API.
 class BodyService {
   static const String baseUrl = '${ApiConfig.baseUrl}/bodies';
   static const Duration timeout = ApiConfig.timeout;
 
+  /// Fetch all bodies from the API.
   static Future<List<Body>> getBodies() async {
     try {
       final response = await http

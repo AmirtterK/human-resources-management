@@ -11,6 +11,8 @@ import 'package:hr_management/tabs/GradesTab.dart';
 import 'package:hr_management/data/data.dart';
 import 'package:hr_management/classes/types.dart';
 
+/// Main dashboard widget for the application.
+/// Manages the sidebar and the display of different tabs based on selection.
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
 

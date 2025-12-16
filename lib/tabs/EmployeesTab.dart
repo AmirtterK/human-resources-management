@@ -15,6 +15,8 @@ import 'package:hr_management/services/pdf_service.dart';
 import 'package:popover/popover.dart';
 import 'package:printing/printing.dart'; // Added for sharing CSV
 
+/// Tab for managing the global list of employees.
+/// Allows filtering, searching, and admin actions like promotion or transfer.
 class EmployeesTab extends StatefulWidget {
   const EmployeesTab({super.key});
 

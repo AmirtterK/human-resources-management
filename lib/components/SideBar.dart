@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:hr_management/classes/types.dart';
 import 'package:hr_management/data/data.dart';
 
+/// Collapsible sidebar navigation menu.
+/// Displays different menu items based on the user role (PM, Agent, Archiver).
 class SideBar extends StatefulWidget {
   final bool isExpanded;
   final VoidCallback onToggle;

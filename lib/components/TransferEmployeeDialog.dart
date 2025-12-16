@@ -5,7 +5,7 @@ import 'package:hr_management/services/department_service.dart';
 import 'package:hr_management/services/employee_service.dart';
 
 /// Dialog for transferring an employee to a different department.
-/// Used by Personnel Manager (PM) role.
+/// Allows selecting a new department and an effective date.
 class TransferEmployeeDialog extends StatefulWidget {
   final Employee employee;
   final VoidCallback? onTransferred;

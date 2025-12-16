@@ -1,3 +1,5 @@
+// This is the entry point of the application.
+// It sets up the routing, theme, and main application widget.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hr_management/pages/HomePage.dart';

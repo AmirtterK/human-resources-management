@@ -2,11 +2,13 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:hr_management/classes/Domain.dart';
 
+/// Service for managing functionality domains via backend API.
 class DomainService {
   static const String baseUrl = 'https://hr-server-3s0m.onrender.com/api';
   static const String asmBase = 'https://hr-server-3s0m.onrender.com/api/asm';
   static const Duration timeout = Duration(seconds: 60);
 
+  /// Fetch all domains.
   static Future<List<Domain>> getDomains() async {
     final res = await http
         .get(Uri.parse('$baseUrl/domains'), headers: {'Content-Type': 'application/json'})

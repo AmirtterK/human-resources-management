@@ -8,6 +8,8 @@ import 'package:hr_management/classes/Employee.dart';
 import 'package:hr_management/classes/Body.dart';
 import 'package:intl/intl.dart';
 
+/// Service for generating PDF documents and CSV exports.
+/// Uses the `pdf` and `printing` packages to create and share/print documents.
 class PdfService {
   /// Generate and save/print employee list PDF
   static Future<void> generateEmployeeListPDF(List<Employee> employees, {String title = 'Employee List'}) async {

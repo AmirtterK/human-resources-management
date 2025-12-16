@@ -3,11 +3,13 @@ import 'package:http/http.dart' as http;
 import 'package:hr_management/classes/Speciality.dart';
 import 'package:hr_management/classes/Domain.dart';
 
+/// Service for managing specialities and their domains.
 class SpecialityService {
   static const String baseUrl = 'https://hr-server-3s0m.onrender.com/api';
   static const String asmBase = 'https://hr-server-3s0m.onrender.com/api/asm';
   static const Duration timeout = Duration(seconds: 60);
 
+  /// Fetch all specialities.
   static Future<List<Speciality>> getSpecialities() async {
     try {
       final response = await http

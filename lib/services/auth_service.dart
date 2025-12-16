@@ -4,9 +4,10 @@ import 'package:http/http.dart' as http;
 import 'package:hr_management/classes/types.dart';
 import 'package:hr_management/config/api_config.dart';
 
-/// Authentication service for validating user credentials via backend API
-/// 
+/// Authentication service for validating user credentials via backend API.
+///
 /// This service communicates with the Spring Boot backend for authentication.
+/// It also handles password reset functionality.
 class AuthService {
   static const String baseUrl = '${ApiConfig.baseUrl}/auth';
   static const Duration timeout = ApiConfig.timeout;
@@ -112,12 +113,5 @@ class AuthService {
     return _displayNames.containsKey(username.trim());
   }
 
-  /// Gets the list of valid usernames for the dropdown
-  static List<Map<String, String>> getAvailableUsers() {
-    return [
-      {'username': 'pm', 'displayName': 'Personnel Manager'},
-      {'username': 'agent', 'displayName': 'Agent'},
-      {'username': 'asm', 'displayName': 'Archive Manager'},
-    ];
-  }
+  
 }

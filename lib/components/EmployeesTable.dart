@@ -5,6 +5,8 @@ import 'package:hr_management/components/StatusChip.dart';
 import 'package:hr_management/data/data.dart';
 import 'package:intl/intl.dart';
 
+/// Reusable data table for displaying a list of employees.
+/// Supports different columns based on the context (e.g. Retirement vs General list).
 class EmployeesTable extends StatelessWidget {
   final List<Employee> employees;
   final Function(Employee, BuildContext)? onEmployeePressed;

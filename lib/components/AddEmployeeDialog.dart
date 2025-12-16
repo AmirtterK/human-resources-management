@@ -7,6 +7,8 @@ import 'package:hr_management/classes/Department.dart';
 import 'package:hr_management/classes/Body.dart';
 import 'package:hr_management/classes/Grade.dart';
 
+/// Dialog for adding a new employee to the system.
+/// Allows entering personal details and assigning initial placement (Department, Body, Grade).
 class AddEmployeeDialog extends StatefulWidget {
   final VoidCallback? onEmployeeAdded;
 

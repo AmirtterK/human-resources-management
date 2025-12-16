@@ -3,6 +3,7 @@ import 'package:hr_management/classes/Body.dart';
 import 'package:hr_management/classes/Grade.dart';
 import 'package:hr_management/services/grade_service.dart';
 
+/// Detailed view for managing grades within a specific Body.
 class ExtendedGradesTab extends StatefulWidget {
   final Body? body;
   final VoidCallback onReturn;
@@ -223,11 +224,52 @@ class _ExtendedGradesTabState extends State<ExtendedGradesTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(left: 24.0, top: 80),
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    "${widget.body!.nameEn} / ",
+                    style: const TextStyle(
+                      letterSpacing: 1,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.teal,
+                    ),
+                  ),
+                  Text(
+                    " ${widget.body!.nameAr}",
+                    style: const TextStyle(
+                      letterSpacing: 1,
+                      fontSize: 24,
+                      fontFamily: 'Alfont',
+                      color: Colors.teal,
+                    ),
+                  ),
+                ],
+              ),
+              OutlinedButton.icon(
+                onPressed: widget.onReturn,
+                icon: const Icon(Icons.arrow_back, size: 18),
+                label: const Text('Return'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xffEF5350),
+                  side: const BorderSide(color: Color(0xffEF5350)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Expanded(
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
@@ -252,42 +294,6 @@ class _ExtendedGradesTabState extends State<ExtendedGradesTab> {
                     ),
                     child: Row(
                       children: [
-                        Text(
-                          "${widget.body!.nameEn} / ",
-                          style: const TextStyle(
-                            letterSpacing: 1,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.teal,
-                          ),
-                        ),
-                        Text(
-                          " ${widget.body!.nameAr}",
-                          style: const TextStyle(
-                            letterSpacing: 1,
-                            fontSize: 24,
-                            fontFamily: 'Alfont',
-                            color: Colors.teal,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        OutlinedButton.icon(
-                          onPressed: widget.onReturn,
-                          icon: const Icon(Icons.arrow_back, size: 18),
-                          label: const Text('Return'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xffEF5350),
-                            side: const BorderSide(color: Color(0xffEF5350)),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
                         IconButton(
                           onPressed: _fetchGrades,
                           icon: const Icon(Icons.refresh, color: Colors.teal),
@@ -299,6 +305,7 @@ class _ExtendedGradesTabState extends State<ExtendedGradesTab> {
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(8),
+                              color: const Color(0xFFF5F5F5),
                             ),
                             child: TextField(
                               controller: _searchController,
@@ -311,8 +318,10 @@ class _ExtendedGradesTabState extends State<ExtendedGradesTab> {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        OutlinedButton(
+                        OutlinedButton.icon(
                           onPressed: _showCreateDialog,
+                          icon: const Icon(Icons.add, size: 18),
+                          label: const Text('Add Grade'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.teal,
                             side: const BorderSide(color: Colors.teal),
@@ -324,7 +333,6 @@ class _ExtendedGradesTabState extends State<ExtendedGradesTab> {
                               borderRadius: BorderRadius.circular(6),
                             ),
                           ),
-                          child: const Text('Add Grade'),
                         ),
                       ],
                     ),
@@ -443,8 +451,8 @@ class _ExtendedGradesTabState extends State<ExtendedGradesTab> {
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

@@ -7,6 +7,8 @@ import 'package:hr_management/services/department_service.dart';
 import 'package:hr_management/classes/Speciality.dart';
 import 'package:hr_management/services/speciality_service.dart';
 
+/// Dialog for modifying a retired employee's information.
+/// Requires Director's Code for authorization.
 class ModifyRetireeDialog extends StatefulWidget {
   final Employee employee;
 

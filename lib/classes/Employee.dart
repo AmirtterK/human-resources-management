@@ -1,5 +1,7 @@
 import 'package:hr_management/classes/types.dart';
 
+/// Represents a single employee in the system.
+/// Contains personal info, employment status, and organizational links.
 class Employee {
   final String id;
   final String fullName;

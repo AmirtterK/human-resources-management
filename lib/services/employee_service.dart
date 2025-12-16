@@ -4,6 +4,8 @@ import 'package:http/http.dart' as http;
 import 'package:hr_management/classes/Employee.dart';
 import 'package:hr_management/config/api_config.dart';
 
+/// Service for managing employees, including CRUD, retirement, and certificates.
+/// Handles communication with PM, ASM, and Agent endpoints.
 class EmployeeService {
   static const String baseUrl = '${ApiConfig.baseUrl}/pm';
   static const Duration timeout = ApiConfig.timeout;
@@ -481,10 +483,14 @@ class EmployeeService {
   /// Calls: POST /api/asm/retireRequests/{id}/validate
   static Future<Map<String, dynamic>> validateRetireRequest(String id) async {
     try {
+      print('Validating retire request for employee $id');
       final response = await http.post(
         Uri.parse('$asmBaseUrl/retireRequests/$id/validate'),
         headers: {'Content-Type': 'application/json'},
       ).timeout(timeout);
+
+      print('POST validate status: ${response.statusCode}');
+      print('POST validate body: ${response.body}');
 
       if (response.statusCode == 200) {
          return {'success': true, 'message': response.body};
@@ -492,7 +498,32 @@ class EmployeeService {
         throw Exception('Failed to validate retirement request: ${response.statusCode} ${response.body}');
       }
     } catch (e) {
+      print('Error in validateRetireRequest: $e');
       throw Exception('Error validating retirement request: $e');
+    }
+  }
+
+  /// Deny retirement request (ASM)
+  /// Calls: POST /api/asm/retireRequests/{id}/deny
+  static Future<Map<String, dynamic>> denyRetireRequest(String id) async {
+    try {
+      print('Denying retire request for employee $id');
+      final response = await http.post(
+        Uri.parse('$asmBaseUrl/retireRequests/$id/reject'),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(timeout);
+
+      print('POST deny status: ${response.statusCode}');
+      print('POST deny body: ${response.body}');
+
+      if (response.statusCode == 200) {
+         return {'success': true, 'message': response.body};
+      } else {
+        throw Exception('Failed to deny retirement request: ${response.statusCode} ${response.body}');
+      }
+    } catch (e) {
+      print('Error in denyRetireRequest: $e');
+      throw Exception('Error denying retirement request: $e');
     }
   }
 

@@ -4,6 +4,7 @@ import 'package:hr_management/components/DepartmentCard.dart';
 import 'package:hr_management/tabs/ExtendedDepartmentsTab.dart';
 import 'package:hr_management/services/department_service.dart';
 
+/// Tab for displaying and managing departments.
 class DepartmentsTab extends StatefulWidget {
   const DepartmentsTab({super.key});
 

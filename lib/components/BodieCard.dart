@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hr_management/classes/Body.dart';
 
+/// Card widget to display key information about an organizational Body.
 class BodieCard extends StatelessWidget {
   final Body body;
   final VoidCallback onViewDetails;

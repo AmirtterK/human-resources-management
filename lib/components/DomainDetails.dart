@@ -5,6 +5,7 @@ import 'package:hr_management/services/speciality_service.dart';
 class DomainDetails extends StatefulWidget {
   final String domainId;
   final String domainName;
+  final List<Speciality> initialSpecialities;
   final VoidCallback onReturn;
 
   const DomainDetails({
@@ -12,6 +13,7 @@ class DomainDetails extends StatefulWidget {
     required this.domainId,
     required this.domainName,
     required this.onReturn,
+    this.initialSpecialities = const [],
   });
 
   @override
@@ -21,7 +23,7 @@ class DomainDetails extends StatefulWidget {
 class _DomainDetailsState extends State<DomainDetails> {
   final List<Speciality> _specialties = [];
   final _specialtyController = TextEditingController();
-  bool _loading = true;
+  bool _loading = false;
 
   @override
   void dispose() {
@@ -63,6 +65,9 @@ class _DomainDetailsState extends State<DomainDetails> {
       setState(() {
         _specialties.removeAt(index);
       });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Speciality deleted')));
     } catch (e) {
       ScaffoldMessenger.of(
         context,
@@ -73,10 +78,16 @@ class _DomainDetailsState extends State<DomainDetails> {
   @override
   void initState() {
     super.initState();
-    _fetchSpecialities();
+    // Use initial specialities from parent domain
+    _specialties.addAll(widget.initialSpecialities);
+    // If no initial specialities provided, try to fetch
+    if (widget.initialSpecialities.isEmpty) {
+      _fetchSpecialities();
+    }
   }
 
   Future<void> _fetchSpecialities() async {
+    setState(() => _loading = true);
     try {
       final list = await SpecialityService.getSpecialities();
       final did = int.tryParse(widget.domainId);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hr_management/classes/Department.dart';
 
+/// Card widget to display a Department summary.
 class DepartmentCard extends StatelessWidget {
   final Department department;
   final VoidCallback onSeeDetails;

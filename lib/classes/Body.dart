@@ -1,5 +1,6 @@
 import 'package:hr_management/classes/Employee.dart';
 
+/// Represents an organizational body (e.g., a large division or unit).
 class Body {
   final String id;
   final String code;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hr_management/components/AuthinticationDialog.dart';
 
+/// Page displaying the authentication dialog.
 class Loginpage extends StatelessWidget {
   const Loginpage({super.key});
 

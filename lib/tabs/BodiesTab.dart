@@ -9,6 +9,7 @@ import 'package:hr_management/services/body_service.dart';
 import 'package:hr_management/services/employee_service.dart';
 import 'package:hr_management/tabs/ExtendedBodiesTab.dart';
 
+/// Tab for displaying and managing organizational bodies.
 class BodiesTab extends StatefulWidget {
   const BodiesTab({super.key});
 

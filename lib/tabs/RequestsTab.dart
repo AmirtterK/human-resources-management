@@ -7,6 +7,7 @@ import 'package:hr_management/services/employee_service.dart';
 import 'package:hr_management/services/pdf_service.dart';
 import 'package:popover/popover.dart';
 
+/// Tab for the Archiver to view and process retirement requests.
 class RequestsTab extends StatefulWidget {
   const RequestsTab({super.key});
 
@@ -86,47 +87,12 @@ class _RequestsTabState extends State<RequestsTab> {
       return;
     }
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Export Options'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.picture_as_pdf, color: Colors.red),
-              title: const Text('Export as PDF'),
-              onTap: () {
-                Navigator.pop(context);
-                _performExport('pdf');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.table_chart, color: Colors.green),
-              title: const Text('Export as CSV'),
-              onTap: () {
-                Navigator.pop(context);
-                _performExport('csv');
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _performExport(String format) async {
     try {
-      if (format == 'pdf') {
-        await PdfService.generateEmployeeListPDF(_filteredRequests, title: 'Retirement Requests');
-      } else {
-        await PdfService.generateEmployeeListCSV(_filteredRequests, title: 'Retirement Requests');
-      }
-
+      await PdfService.generateEmployeeListPDF(_filteredRequests, title: 'Retirees');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Employee list exported as ${format.toUpperCase()}'),
+          const SnackBar(
+            content: Text('Employee list exported successfully'),
             backgroundColor: Colors.green,
           ),
         );
@@ -135,7 +101,7 @@ class _RequestsTabState extends State<RequestsTab> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error exporting ${format.toUpperCase()}: $e'),
+            content: Text('Error exporting PDF: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -362,45 +328,19 @@ class _RequestsTabState extends State<RequestsTab> {
   Future<void> _validateRequest(Employee employee) async {
     print('Attempting to VALIDATE request for employee ${employee.id}...');
     try {
-      // Build payload matching strict structure
-      final payload = {
-        'firstName': employee.firstName ?? (employee.fullName.split(' ').isNotEmpty ? employee.fullName.split(' ').first : ''),
-        'lastName': employee.lastName ?? (employee.fullName.split(' ').length > 1 ? employee.fullName.split(' ').sublist(1).join(' ') : ''),
-        'dateOfBirth': employee.dateOfBirth?.toIso8601String().split('T').first ?? employee.requestDate?.toIso8601String().split('T').first,
-        'address': employee.address ?? '',
-        'originalRank': employee.rank, // Assuming 'rank' maps to 'originalRank'
-        'departmentId': employee.departmentId,
-        'specialityId': employee.specialityId,
-        'step': employee.step,
-        'reference': employee.reference ?? '',
-        'retireRequest': false,
-        'status': 'RETIRED' // We must set status to retired
-      };
-
-      // Remove nulls if any, though most have fallbacks
-      payload.removeWhere((key, value) => value == null);
-      print('Sending validate payload: $payload');
-
-      final result = await EmployeeService.modifyEmployee(
-        employee.id,
-        payload,
-      );
+      final result = await EmployeeService.validateRetireRequest(employee.id);
       
       print('Validate result: $result');
 
       if (!mounted) return;
       
-      if (result['success'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Retirement request validated'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        _fetchRequests(); // Refresh list to remove the processed item
-      } else {
-        throw Exception(result['message'] ?? 'Unknown error');
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Retirement request validated successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      _fetchRequests(); // Refresh list to remove the processed item
     } catch (e) {
       print('Error in _validateRequest: $e');
       if (mounted) {
@@ -415,52 +355,27 @@ class _RequestsTabState extends State<RequestsTab> {
   }
 
   Future<void> _denyRequest(Employee employee) async {
-    print('Attempting to DENY request for employee ${employee.id}...');
+    print('Attempting to REJECT request for employee ${employee.id}...');
     try {
-      // Build payload matching strict structure
-      final payload = {
-        'firstName': employee.firstName ?? (employee.fullName.split(' ').isNotEmpty ? employee.fullName.split(' ').first : ''),
-        'lastName': employee.lastName ?? (employee.fullName.split(' ').length > 1 ? employee.fullName.split(' ').sublist(1).join(' ') : ''),
-        'dateOfBirth': employee.dateOfBirth?.toIso8601String().split('T').first ?? employee.requestDate?.toIso8601String().split('T').first,
-        'address': employee.address ?? '',
-        'originalRank': employee.rank,
-        'departmentId': employee.departmentId,
-        'specialityId': employee.specialityId,
-        'step': employee.step,
-        'reference': employee.reference ?? '',
-        'retireRequest': false,
-        // Status remains unchanged (ACTIVE)
-      };
-
-      payload.removeWhere((key, value) => value == null);
-      print('Sending deny payload: $payload');
-
-      final result = await EmployeeService.modifyEmployee(
-        employee.id,
-        payload,
-      );
+      final result = await EmployeeService.denyRetireRequest(employee.id);
       
-      print('Deny result: $result');
+      print('Reject result: $result');
       
       if (!mounted) return;
       
-      if (result['success'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Retirement request denied'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        _fetchRequests(); // Refresh list to remove the processed item
-      } else {
-        throw Exception(result['message'] ?? 'Unknown error');
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Retirement request rejected'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      _fetchRequests(); // Refresh list to remove the processed item
     } catch (e) {
       print('Error in _denyRequest: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error denying request: $e'),
+            content: Text('Error rejecting request: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -472,7 +387,7 @@ class _RequestsTabState extends State<RequestsTab> {
     setState(() {
       selectedEmployee = employee;
     });
-    // Archiver's options
+    // Archiver's options - validate and reject
     double popHeight = 80;
     
     showPopover(
@@ -519,7 +434,7 @@ class _RequestsTabState extends State<RequestsTab> {
                 ),
                 alignment: Alignment.center,
                 child: const Text(
-                  "Deny",
+                  "Reject",
                   style: TextStyle(color: Colors.red, fontSize: 14),
                 ),
               ),

@@ -10,6 +10,7 @@ import 'package:hr_management/data/data.dart';
 import 'package:hr_management/services/employee_service.dart';
 import 'package:popover/popover.dart';
 
+/// Detailed view of a specific Body, showing its employees.
 class ExtendedBodiesTab extends StatefulWidget {
   const ExtendedBodiesTab({
     super.key,

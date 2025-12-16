@@ -1,3 +1,4 @@
+/// Represents an employee rank or grade level.
 class Grade {
   final String id;
   final String code;

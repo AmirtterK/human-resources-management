@@ -1,5 +1,6 @@
 import 'package:hr_management/classes/Employee.dart';
 
+/// Represents a department within the organization.
 class Department {
   final String id;
   final String name;

@@ -5,6 +5,7 @@ import 'package:hr_management/classes/Department.dart';
 
 import 'package:hr_management/config/api_config.dart';
 
+/// Service for managing departments via backend API.
 class DepartmentService {
   static const String baseUrl = '${ApiConfig.baseUrl}/departments'; // Modified baseUrl
   static const Duration timeout = ApiConfig.timeout; // Modified timeout

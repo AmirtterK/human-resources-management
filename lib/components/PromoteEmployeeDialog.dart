@@ -7,7 +7,7 @@ import 'package:hr_management/services/grade_service.dart';
 import 'package:hr_management/services/employee_service.dart';
 
 /// Dialog for promoting an employee (PM role).
-/// PM must select new Grade and Step, and provide Justification.
+/// PM must select new Grade, Rank, and Step, and provide Justification.
 class PromoteEmployeeDialog extends StatefulWidget {
   final Employee employee;
   final VoidCallback? onPromoted;

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// Card widget to display a Domain item.
 class DomainCard extends StatelessWidget {
   final String domainName;
   final VoidCallback onModify;

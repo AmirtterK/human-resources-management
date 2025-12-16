@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:hr_management/services/auth_service.dart';
 import 'package:hr_management/data/data.dart' as app_data;
 
+/// Dialog widget for user login.
+/// Handles credential validation and navigation on success.
 class AuthinticationDialog extends StatefulWidget {
   const AuthinticationDialog({super.key});
 

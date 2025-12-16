@@ -3,10 +3,12 @@ import 'package:http/http.dart' as http;
 import 'package:hr_management/classes/Grade.dart';
 import 'package:hr_management/config/api_config.dart'; // Added import for ApiConfig
 
+/// Service for managing grades associated with bodies.
 class GradeService {
   static const String baseUrl = '${ApiConfig.baseUrl}/asm';
   static const Duration timeout = ApiConfig.timeout; // Corrected based on likely intent for syntactic correctness
 
+  /// Fetch grades for a specific body.
   static Future<List<Grade>> getGradesByBody(String bodyId) async {
     final idNum = int.tryParse(bodyId);
     if (idNum == null) return [];
